@@ -6,17 +6,19 @@ import com.worktile.ui.recyclerview.ItemData
 import com.worktile.ui.recyclerview.ItemViewModel
 import com.worktile.ui.recyclerview.SimpleAdapter
 import com.worktile.ui.recyclerview.SimpleRecyclerView
+import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
 
-fun <T : ItemViewModel> SimpleRecyclerView.bind(data: MutableLiveData<MutableList<ItemData<out T>>>, owner: LifecycleOwner) {
+internal fun <T : ItemViewModel> SimpleRecyclerView.bind(data: MutableLiveData<MutableList<ItemData<out T>>>, owner: LifecycleOwner) {
     data.observe(owner) {
+        var adapter: SimpleAdapter<T>? = null
         val cloneDataList = mutableListOf<ItemData<out T>>()
         cloneDataList.addAll(it)
-        this.adapter?.let { adapter ->
-            if (adapter is SimpleAdapter<*>) {
-                (adapter as SimpleAdapter<T>).updateData(cloneDataList)
-            }
-        } ?: run {
-            setData(cloneDataList)
+        adapter?.updateData(cloneDataList) ?: run {
+            adapter = setData(cloneDataList)
         }
     }
+}
+
+fun SimpleRecyclerView.bind(data: RecyclerViewViewModel, owner: LifecycleOwner) {
+    this.bind(data.recyclerViewData, owner)
 }
