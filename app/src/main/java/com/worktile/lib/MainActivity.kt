@@ -3,6 +3,7 @@ package com.worktile.lib
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
 import android.widget.TextView
 import androidx.appcompat.view.menu.MenuView
 import androidx.lifecycle.MutableLiveData
@@ -21,14 +22,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         val viewModel = ViewModelProvider(this, ViewModelProvider.NewInstanceFactory()).get(MainActivityViewModel::class.java)
-        recycler_view.bind(viewModel, this) { type ->
-            when (type) {
-                TestItemViewModel::class -> {
-                    TextView(this)
-                }
-                else -> null
-            }
-        }
+        recycler_view.bind(viewModel, this)
     }
 }
 
@@ -48,6 +42,10 @@ class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
 
 interface TestItemViewModel : DiffItemViewModel, Definition {
     val title: MutableLiveData<String>
+
+    override fun viewCreator() = { parent: ViewGroup ->
+        TextView(parent.context)
+    }
 
     override fun bind(itemView: View) {
         (itemView as? TextView)?.text = title.value

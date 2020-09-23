@@ -7,6 +7,7 @@ import java.lang.reflect.Field
 import java.util.*
 
 interface ItemBinder {
+    fun viewCreator(): ViewCreator
     fun bind(itemView: View)
     fun type(): Any
 }

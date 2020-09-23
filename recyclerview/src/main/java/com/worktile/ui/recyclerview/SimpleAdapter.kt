@@ -10,12 +10,13 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+typealias ViewCreator = (parent: ViewGroup) -> View
+
 class SimpleAdapter<T>(
-    private val data: MutableList<T>,
-    private val itemViewCreator: (type: Any) -> View?
+    private val data: MutableList<T>
 ) : RecyclerView.Adapter<ItemViewHolder>() where T : ItemViewModel, T : ItemBinder {
     private val typeToAdapterTypeMap = hashMapOf<Any, Int>()
-    private val adapterTypeToTypeMap = hashMapOf<Int, Any>()
+    private val adapterTypeToViewCreatorMap = hashMapOf<Int, ViewCreator>()
     private var typeIndex = 0
 
     override fun getItemViewType(position: Int): Int {
@@ -25,20 +26,15 @@ class SimpleAdapter<T>(
         } ?: run {
             val adapterType = typeIndex
             typeToAdapterTypeMap[itemData.type()] = adapterType
-            adapterTypeToTypeMap[adapterType] = itemData.type()
+            adapterTypeToViewCreatorMap[adapterType] = itemData.viewCreator()
             typeIndex++
             return adapterType
         }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder {
-        val type = adapterTypeToTypeMap[viewType]!!
-        val itemView = itemViewCreator.invoke(type)
-        itemView?.run {
-            return ItemViewHolder(itemView)
-        } ?: run {
-            throw RuntimeException("type为${type}时无法创建View")
-        }
+        val viewCreator = adapterTypeToViewCreatorMap[viewType]!!
+        return ItemViewHolder(viewCreator.invoke(parent))
     }
 
     override fun onBindViewHolder(holder: ItemViewHolder, position: Int) {
