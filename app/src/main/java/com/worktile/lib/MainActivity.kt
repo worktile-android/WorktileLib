@@ -21,31 +21,37 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         val viewModel = ViewModelProvider(this, ViewModelProvider.NewInstanceFactory()).get(MainActivityViewModel::class.java)
-        recycler_view.bind(viewModel, this)
+        recycler_view.bind(viewModel, this) { type ->
+            when (type) {
+                TestItemViewModel::class -> {
+                    TextView(this)
+                }
+                else -> null
+            }
+        }
     }
 }
 
 class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
-    val context = Worktile.applicationContext
+    private val originData = arrayOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
 
     init {
-        val item1 = ItemData(object : DiffItemViewModel() {
-            override fun key(): String {
-                return ""
-            }
-        }, TextView(context)) { itemViewModel, itemView ->
-
+        originData.forEach {
+            recyclerViewData.value?.add(object : TestItemViewModel {
+                override val title = MutableLiveData(it)
+                override fun key() = it
+            })
         }
-        val item2 = ItemData(TestItemView(), View(context), { t, itemView ->  })
-        item2.itemViewModel.content()
-        recyclerViewData.value?.add(item1)
-        recyclerViewData.value?.add(item2)
+        recyclerViewData.postValue(recyclerViewData.value)
     }
 }
 
-class TestItemView : DiffItemViewModel() {
-    val test = MutableLiveData("")
-    val testInt = MutableLiveData(1)
+interface TestItemViewModel : DiffItemViewModel, Definition {
+    val title: MutableLiveData<String>
 
-    override fun key() = ""
+    override fun bind(itemView: View) {
+        (itemView as? TextView)?.text = title.value
+    }
+
+    override fun type() = TestItemViewModel::class
 }

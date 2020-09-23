@@ -14,10 +14,4 @@ class SimpleRecyclerView : RecyclerView {
     init {
         layoutManager = LinearLayoutManager(context)
     }
-
-    fun <T : ItemViewModel> setData(data: MutableList<ItemData<out T>>): SimpleAdapter<T> {
-        val adapter = SimpleAdapter(data)
-        setAdapter(adapter)
-        return adapter
-    }
 }

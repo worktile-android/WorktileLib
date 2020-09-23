@@ -1,6 +1,7 @@
 package com.worktile.ui.recyclerview
 
 import android.util.Log
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
@@ -8,40 +9,45 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.reflect.KClass
 
-class SimpleAdapter<T : ItemViewModel>(
-    private val data: MutableList<ItemData<out T>>
-) : RecyclerView.Adapter<ItemViewHolder<T>>() {
-    private val binderTypeMap = hashMapOf<KClass<*>, Int>()
-    private val typeItemDataMap = hashMapOf<Int, ItemData<out T>>()
+class SimpleAdapter<T>(
+    private val data: MutableList<T>,
+    private val itemViewCreator: (type: Any) -> View?
+) : RecyclerView.Adapter<ItemViewHolder>() where T : ItemViewModel, T : ItemBinder {
+    private val typeToAdapterTypeMap = hashMapOf<Any, Int>()
+    private val adapterTypeToTypeMap = hashMapOf<Int, Any>()
     private var typeIndex = 0
 
     override fun getItemViewType(position: Int): Int {
         val itemData = data[position]
-        val itemBinder = itemData.itemBinder
-        binderTypeMap[itemBinder::class]?.run {
+        typeToAdapterTypeMap[itemData.type()]?.run {
             return this
         } ?: run {
-            val type = typeIndex
-            binderTypeMap[itemBinder::class] = type
-            typeItemDataMap[type] = itemData
+            val adapterType = typeIndex
+            typeToAdapterTypeMap[itemData.type()] = adapterType
+            adapterTypeToTypeMap[adapterType] = itemData.type()
             typeIndex++
-            return type
+            return adapterType
         }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder<T> {
-        return ItemViewHolder(typeItemDataMap[viewType]!!)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder {
+        val type = adapterTypeToTypeMap[viewType]!!
+        val itemView = itemViewCreator.invoke(type)
+        itemView?.run {
+            return ItemViewHolder(itemView)
+        } ?: run {
+            throw RuntimeException("type为${type}时无法创建View")
+        }
     }
 
-    override fun onBindViewHolder(holder: ItemViewHolder<T>, position: Int) {
-        holder.itemData.itemBinder.bind(holder.itemData.itemViewModel, holder.itemData.itemView)
+    override fun onBindViewHolder(holder: ItemViewHolder, position: Int) {
+        data[position].bind(holder.itemView)
     }
 
     override fun getItemCount() = data.size
 
-    fun updateData(newData: List<ItemData<out T>>) = GlobalScope.launch {
+    fun updateData(newData: List<T>) = GlobalScope.launch {
         val diffResult = withContext(Dispatchers.Default) {
             DiffUtil.calculateDiff(object : DiffUtil.Callback() {
                 override fun getOldListSize() = data.size
@@ -49,12 +55,12 @@ class SimpleAdapter<T : ItemViewModel>(
                 override fun getNewListSize() = newData.size
 
                 override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                    return data[oldItemPosition].itemViewModel.key() == newData[newItemPosition].itemViewModel.key()
+                    return data[oldItemPosition].key() == newData[newItemPosition].key()
                 }
 
                 override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                    val oldContent = data[oldItemPosition].itemViewModel.content()
-                    val newContent = newData[newItemPosition].itemViewModel.content()
+                    val oldContent = data[oldItemPosition].content()
+                    val newContent = newData[newItemPosition].content()
                     if (oldContent == null || newContent == null) {
                         return false
                     }
@@ -83,7 +89,7 @@ class SimpleAdapter<T : ItemViewModel>(
                         )
                         if (oldComparatorResult != null && newComparatorResult != null) {
                             if (oldComparatorResult != newComparatorResult) {
-                                Log.w("SimpleAdapter", "item ${data[oldItemPosition].itemViewModel.key()}前后两次对比结果不同")
+                                Log.w("SimpleAdapter", "item ${data[oldItemPosition].key()}前后两次对比结果不同")
                                 return false
                             } else {
                                 val result = oldComparatorResult && newComparatorResult
@@ -108,4 +114,4 @@ class SimpleAdapter<T : ItemViewModel>(
     }
 }
 
-class ItemViewHolder<T : ItemViewModel>(val itemData: ItemData<out T>) : RecyclerView.ViewHolder(itemData.itemView)
+class ItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
