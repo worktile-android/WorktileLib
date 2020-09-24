@@ -13,16 +13,20 @@ interface ItemBinder {
 }
 
 interface ItemViewModel : BaseViewModel {
-    fun key(): String
+    fun key(): Any
     fun content(): Array<ContentItem<*>>?
+}
+
+fun interface ContentItemComparator<T> {
+    fun compare(o1: @UnsafeVariance T, o2: @UnsafeVariance T): Boolean
 }
 
 data class ContentItem<T>(
     val value: T,
-    val comparator: ((o1: @UnsafeVariance T, o2: @UnsafeVariance T) -> Boolean)? = null
+    val comparator: (ContentItemComparator<T>)? = null
 )
 
-infix fun <T> T.withComparator(comparator: (o1: T, o2: T) -> Boolean) = ContentItem(this, comparator)
+infix fun <T> T.withComparator(comparator: ContentItemComparator<T>) = ContentItem(this, comparator)
 
 interface NoKeyItemViewModel : ItemViewModel {
     override fun key() = UUID.randomUUID().toString()

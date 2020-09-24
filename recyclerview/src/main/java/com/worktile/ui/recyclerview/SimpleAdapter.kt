@@ -84,11 +84,11 @@ class SimpleAdapter<T>(
                         if (oldContentItem.value::class != newContentItem.value::class) {
                             return false
                         }
-                        val oldComparatorResult = oldContentItem.comparator?.invoke(
+                        val oldComparatorResult = oldContentItem.comparator?.compare(
                             oldContentItem.value,
                             newContentItem.value
                         )
-                        val newComparatorResult = newContentItem.comparator?.invoke(
+                        val newComparatorResult = newContentItem.comparator?.compare(
                             oldContentItem.value,
                             newContentItem.value
                         )
