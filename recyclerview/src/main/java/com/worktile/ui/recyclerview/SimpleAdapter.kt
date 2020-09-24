@@ -3,17 +3,18 @@ package com.worktile.ui.recyclerview
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 typealias ViewCreator = (parent: ViewGroup) -> View
 
 class SimpleAdapter<T>(
-    private val data: MutableList<T>
+    private val data: MutableList<T>,
+    private val lifecycleOwner: LifecycleOwner
 ) : RecyclerView.Adapter<ItemViewHolder>() where T : ItemViewModel, T : ItemBinder {
     private val typeToAdapterTypeMap = hashMapOf<Any, Int>()
     private val adapterTypeToViewCreatorMap = hashMapOf<Int, ViewCreator>()
@@ -43,8 +44,9 @@ class SimpleAdapter<T>(
 
     override fun getItemCount() = data.size
 
-    fun updateData(newData: List<T>) = GlobalScope.launch {
+    fun updateData(newData: List<T>) = lifecycleOwner.lifecycleScope.launchWhenStarted{
         val diffResult = withContext(Dispatchers.Default) {
+//            Thread.sleep(2000)
             DiffUtil.calculateDiff(object : DiffUtil.Callback() {
                 override fun getOldListSize() = data.size
 

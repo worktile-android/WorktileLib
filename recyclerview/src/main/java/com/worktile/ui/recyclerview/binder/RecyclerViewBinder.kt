@@ -2,7 +2,10 @@ package com.worktile.ui.recyclerview.binder
 
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
-import com.worktile.ui.recyclerview.*
+import com.worktile.ui.recyclerview.ItemBinder
+import com.worktile.ui.recyclerview.ItemViewModel
+import com.worktile.ui.recyclerview.SimpleAdapter
+import com.worktile.ui.recyclerview.SimpleRecyclerView
 import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
 
 internal fun <T> SimpleRecyclerView.bind(
@@ -14,7 +17,7 @@ internal fun <T> SimpleRecyclerView.bind(
         val cloneDataList = mutableListOf<T>()
         cloneDataList.addAll(it)
         adapter?.updateData(cloneDataList) ?: run {
-            adapter = SimpleAdapter(cloneDataList)
+            adapter = SimpleAdapter(cloneDataList, owner)
             setAdapter(adapter)
         }
     }
