@@ -29,6 +29,9 @@ class MainActivity : AppCompatActivity() {
         button.setOnClickListener {
             viewModel.updateData()
         }
+        loading.setOnClickListener {
+            viewModel.loading()
+        }
     }
 }
 
@@ -61,6 +64,10 @@ class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
 //            override fun key() = "5678"
 //        })
 //        recyclerViewData.notifyChanged()
+    }
+
+    fun loading() {
+        loadingState.value = LoadingState.LOADING
     }
 }
 
