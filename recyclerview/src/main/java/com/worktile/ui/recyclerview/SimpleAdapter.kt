@@ -19,6 +19,7 @@ class SimpleAdapter<T>(
     private val typeToAdapterTypeMap = hashMapOf<Any, Int>()
     private val adapterTypeToViewCreatorMap = hashMapOf<Int, ViewCreator>()
     private var typeIndex = 0
+    private var contentList = mutableListOf<Array<ContentItem<*>>?>()
 
     override fun getItemViewType(position: Int): Int {
         val itemData = data[position]
@@ -39,14 +40,20 @@ class SimpleAdapter<T>(
     }
 
     override fun onBindViewHolder(holder: ItemViewHolder, position: Int) {
+        contentList.add(position, data[position].content())
         data[position].bind(holder.itemView)
     }
 
-    override fun getItemCount() = data.size
+    override fun getItemCount(): Int {
+        val size = data.size
+        if (contentList.size > size + 10) {
+            contentList = contentList.slice(0 until size).toMutableList()
+        }
+        return size
+    }
 
     fun updateData(newData: List<T>) = lifecycleOwner.lifecycleScope.launchWhenStarted{
         val diffResult = withContext(Dispatchers.Default) {
-//            Thread.sleep(2000)
             DiffUtil.calculateDiff(object : DiffUtil.Callback() {
                 override fun getOldListSize() = data.size
 
@@ -57,7 +64,7 @@ class SimpleAdapter<T>(
                 }
 
                 override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                    val oldContent = data[oldItemPosition].content()
+                    val oldContent = contentList.elementAtOrNull(oldItemPosition)
                     val newContent = newData[newItemPosition].content()
                     if (oldContent == null || newContent == null) {
                         return false

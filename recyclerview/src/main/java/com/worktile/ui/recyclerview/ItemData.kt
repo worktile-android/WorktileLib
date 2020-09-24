@@ -29,16 +29,10 @@ interface NoKeyItemViewModel : ItemViewModel {
     override fun content(): Array<ContentItem<*>>? = null
 }
 
-interface DiffItemViewModel : ItemViewModel {
+interface DiffLiveDataItemViewModel : ItemViewModel {
     override fun content(): Array<ContentItem<*>>? {
         val contentList = mutableListOf<ContentItem<*>>()
-        val fields = mutableListOf<Field>()
-        var clazz: Class<*>? = this::class.java
-        while (clazz != null) {
-            fields.addAll(clazz.declaredFields)
-            clazz = clazz.superclass
-        }
-        fields
+        getAllFields(this)
             .filter {
                 LiveData::class.java.isAssignableFrom(it.type)
             }
@@ -49,6 +43,28 @@ interface DiffItemViewModel : ItemViewModel {
             }
         return contentList.toTypedArray()
     }
+}
+
+interface DiffItemViewModel : ItemViewModel {
+    override fun content(): Array<ContentItem<*>>? {
+        val contentList = mutableListOf<ContentItem<*>>()
+        getAllFields(this)
+            .forEach {
+                it.isAccessible = true
+                contentList.add(ContentItem(it.get(this)))
+            }
+        return contentList.toTypedArray()
+    }
+}
+
+private fun getAllFields(obj: Any): List<Field> {
+    val fields = mutableListOf<Field>()
+    var clazz: Class<*>? = obj::class.java
+    while (clazz != null) {
+        fields.addAll(clazz.declaredFields)
+        clazz = clazz.superclass
+    }
+    return fields
 }
 
 interface Definition : ItemViewModel, ItemBinder
