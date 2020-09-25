@@ -52,7 +52,7 @@ class SimpleAdapter<T>(
         return size
     }
 
-    fun updateData(newData: List<T>) = lifecycleOwner.lifecycleScope.launchWhenStarted{
+    fun updateData(newData: List<T>, updateListener: (() -> Unit)? = null) = lifecycleOwner.lifecycleScope.launchWhenStarted{
         val diffResult = withContext(Dispatchers.Default) {
             DiffUtil.calculateDiff(object : DiffUtil.Callback() {
                 override fun getOldListSize() = data.size
@@ -116,6 +116,7 @@ class SimpleAdapter<T>(
         data.clear()
         data.addAll(newData)
         diffResult.dispatchUpdatesTo(this@SimpleAdapter)
+        updateListener?.invoke()
     }
 }
 
