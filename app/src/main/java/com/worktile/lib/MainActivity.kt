@@ -13,9 +13,10 @@ import com.worktile.base.arch.notifyChanged
 import com.worktile.base.arch.viewmodel.default
 import com.worktile.ui.recyclerview.*
 import com.worktile.ui.recyclerview.binder.bind
+import com.worktile.ui.recyclerview.LoadingState
+import com.worktile.ui.recyclerview.binder.Config
 import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlin.reflect.KClass
 
 class MainActivity : AppCompatActivity() {
     @ExperimentalStdlibApi
@@ -31,6 +32,15 @@ class MainActivity : AppCompatActivity() {
         }
         loading.setOnClickListener {
             viewModel.loading()
+        }
+        empty.setOnClickListener {
+            viewModel.empty()
+        }
+        failed.setOnClickListener {
+            viewModel.failed()
+        }
+        footer_loading.setOnClickListener {
+            viewModel.footerLoading()
         }
     }
 }
@@ -68,6 +78,18 @@ class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
 
     fun loading() {
         loadingState.value = LoadingState.LOADING
+    }
+
+    fun empty() {
+        loadingState.value = LoadingState.EMPTY
+    }
+
+    fun failed() {
+        loadingState.value = LoadingState.FAILED
+    }
+
+    fun footerLoading() {
+        footerState.value = EdgeState.LOADING
     }
 }
 

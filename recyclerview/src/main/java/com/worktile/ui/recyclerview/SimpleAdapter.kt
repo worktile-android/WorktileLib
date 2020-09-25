@@ -117,10 +117,6 @@ class SimpleAdapter<T>(
         data.addAll(newData)
         diffResult.dispatchUpdatesTo(this@SimpleAdapter)
     }
-
-    fun updateLoadingState(state: LoadingState) {
-
-    }
 }
 
 class ItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
