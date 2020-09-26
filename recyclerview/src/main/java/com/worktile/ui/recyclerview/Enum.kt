@@ -9,6 +9,7 @@ enum class LoadingState {
 }
 
 enum class EdgeState {
+    INIT,
     NO_MORE,
     LOADING,
     FAILED,

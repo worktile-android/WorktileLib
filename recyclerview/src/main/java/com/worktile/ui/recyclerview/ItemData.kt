@@ -28,11 +28,6 @@ data class ContentItem<T>(
 
 infix fun <T> T.withComparator(comparator: ContentItemComparator<T>) = ContentItem(this, comparator)
 
-interface NoKeyItemViewModel : ItemViewModel {
-    override fun key() = UUID.randomUUID().toString()
-    override fun content(): Array<ContentItem<*>>? = null
-}
-
 interface DiffLiveDataItemViewModel : ItemViewModel {
     override fun content(): Array<ContentItem<*>>? {
         val contentList = mutableListOf<ContentItem<*>>()

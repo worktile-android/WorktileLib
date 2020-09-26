@@ -50,4 +50,34 @@
             app:layout_constraintBottom_toTopOf="@+id/failed" app:layout_constraintEnd_toEndOf="parent"
             android:layout_marginEnd="28dp" android:layout_marginBottom="8dp" android:id="@+id/footer_loading"/>
 
+    <Button
+            android:text="FOOTER NO MORE"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/footer_no_more"
+            app:layout_constraintBottom_toTopOf="@+id/footer_loading"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginEnd="28dp"
+            android:layout_marginBottom="8dp"/>
+
+    <Button
+            android:text="FOOTER FAILED"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/footer_failed"
+            app:layout_constraintBottom_toTopOf="@+id/footer_no_more"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="28dp"/>
+
+    <Button
+            android:text="FOOTER SUCCESS"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/footer_success"
+            app:layout_constraintBottom_toTopOf="@+id/footer_failed"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="28dp"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -3,14 +3,10 @@ package com.worktile.ui.recyclerview.binder
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.widget.TextView
 import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.worktile.base.Worktile
 import com.worktile.ui.recyclerview.*
-import com.worktile.ui.recyclerview.LoadingState
 import com.worktile.ui.recyclerview.viewmodels.LoadingStateItemViewModel
 import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
 import kotlinx.android.synthetic.main.item_empty.view.*
@@ -18,9 +14,34 @@ import kotlinx.android.synthetic.main.item_empty.view.*
 fun RecyclerView.bind(
     data: RecyclerViewViewModel,
     owner: LifecycleOwner,
-    config: Config? = null
+    config: Config = Config()
 ) {
+    fun isToEnd(): Boolean {
+        val lastChildView = layoutManager!!.getChildAt(layoutManager!!.childCount - 1) ?: return false
+        val lastChildPosition = IntArray(2)
+        lastChildView.getLocationInWindow(lastChildPosition)
+        val lastChildBottom = lastChildView.height + lastChildPosition[1]
+        val recyclerViewPosition = IntArray(2)
+        getLocationInWindow(recyclerViewPosition)
+        val recyclerBottom = height + recyclerViewPosition[1] - paddingBottom
+        val lastPosition = layoutManager!!.getPosition(lastChildView)
+        return lastChildBottom == recyclerBottom && lastPosition == layoutManager!!.itemCount - 1
+    }
+
     var adapter: SimpleAdapter<Definition>? = null
+    if (config.loadMoreOnFooter) {
+        addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                super.onScrollStateChanged(recyclerView, newState)
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    val isEnd: Boolean = isToEnd()
+                    if (isEnd && adapter?.isLoadingMore == false) {
+                        data.onLoadMore?.invoke()
+                    }
+                }
+            }
+        })
+    }
     data.recyclerViewData.observe(owner) {
         val cloneDataList = mutableListOf<Definition>()
         cloneDataList.addAll(it)
@@ -30,24 +51,26 @@ fun RecyclerView.bind(
             layoutManager = LinearLayoutManager(this.context)
 
             val loadingItemViewModel = object : LoadingStateItemViewModel(LoadingState.LOADING) {
-                override fun viewCreator() = config?.loadingViewCreator ?: { parent: ViewGroup ->
+                override fun viewCreator() = config.loadingViewCreator ?: { parent: ViewGroup ->
                     LayoutInflater.from(parent.context).inflate(R.layout.item_loading, parent, false)
                 }
             }
 
             val emptyItemViewModel = object : LoadingStateItemViewModel(LoadingState.EMPTY) {
-                override fun viewCreator() = config?.emptyViewCreator ?: { parent: ViewGroup ->
+                override fun viewCreator() = config.emptyViewCreator ?: { parent: ViewGroup ->
                     LayoutInflater.from(parent.context).inflate(R.layout.item_empty, parent, false)
                 }
             }
 
             val failureItemViewModel = object : LoadingStateItemViewModel(LoadingState.FAILED) {
-                override fun viewCreator() = config?.failureViewCreator ?: { parent: ViewGroup ->
+                override fun viewCreator() = config.failureViewCreator ?: { parent: ViewGroup ->
                     LayoutInflater.from(parent.context).inflate(R.layout.item_empty, parent, false).apply {
                         empty_hint.text = parent.context.getString(R.string.retry_hint)
-                        setOnClickListener {
-                            data.loadingState.value = LoadingState.LOADING
-                            config?.failureRetry?.invoke()
+                        if (data.onLoadFailedRetry != null) {
+                            setOnClickListener {
+                                data.loadingState.value = LoadingState.LOADING
+                                data.onLoadFailedRetry?.invoke()
+                            }
                         }
                     }
                 }
@@ -58,30 +81,79 @@ fun RecyclerView.bind(
                     LoadingState.LOADING -> adapter?.updateData(listOf(loadingItemViewModel))
                     LoadingState.EMPTY -> adapter?.updateData(listOf(emptyItemViewModel))
                     LoadingState.FAILED -> adapter?.updateData(listOf(failureItemViewModel))
-                    else -> { }
+                    LoadingState.SUCCESS -> adapter?.updateData(emptyList())
+                    else -> {}
+                }
+            }
+
+            fun updateFooterItemViewModel(footerItemViewModel: EdgeItemViewModel?) {
+                val clonedDataList = mutableListOf<Definition>()
+                clonedDataList.addAll(data.recyclerViewData.value ?: emptyList())
+                footerItemViewModel?.run {
+                    clonedDataList.add(footerItemViewModel)
+                    adapter?.updateData(clonedDataList) {
+                        scrollToPosition((adapter?.itemCount ?: 1) - 1)
+                    }
                 }
             }
 
             data.footerState.observe(owner) footer@ { state ->
-                if (config?.loadMoreOnFooter == false) return@footer
+                if (!config.loadMoreOnFooter) return@footer
                 when (state) {
                     EdgeState.LOADING -> {
-                        val clonedDataList = mutableListOf<Definition>()
-                        clonedDataList.addAll(data.recyclerViewData.value ?: emptyList())
-                        clonedDataList.add(EdgeItemViewModel(
-                            EdgeState.LOADING,
-                            config?.footerLoadingViewCreator,
-                            R.layout.item_footer_loading
-                        ))
-                        adapter?.updateData(clonedDataList)
+                        adapter?.isLoadingMore = true
+                        updateFooterItemViewModel(
+                            EdgeItemViewModel(
+                                EdgeState.LOADING,
+                                config.footerLoadingViewCreator,
+                                R.layout.item_footer_loading
+                            )
+                        )
                     }
+
+                    EdgeState.NO_MORE -> {
+                        adapter?.isLoadingMore = false
+                        updateFooterItemViewModel(
+                            EdgeItemViewModel(
+                                EdgeState.NO_MORE,
+                                config.footerNoMoreViewCreator,
+                                R.layout.item_footer_no_more
+                            )
+                        )
+                    }
+
+                    EdgeState.FAILED -> {
+                        updateFooterItemViewModel(object : EdgeItemViewModel(
+                            EdgeState.FAILED,
+                            config.footerFailureViewCreator,
+                            R.layout.item_footer_failed
+                        ) {
+                            override fun viewCreator() = { parent: ViewGroup ->
+                                super.viewCreator().invoke(parent).apply {
+                                    if (data.onLoadMoreRetry != null) {
+                                        setOnClickListener {
+                                            data.footerState.value = EdgeState.LOADING
+                                            data.onLoadMoreRetry?.invoke()
+                                        }
+                                    }
+                                }
+                            }
+                        })
+                    }
+
+                    EdgeState.SUCCESS -> {
+                        adapter?.isLoadingMore = false
+                        updateFooterItemViewModel(null)
+                    }
+
+                    else -> {}
                 }
             }
         }
     }
 }
 
-internal class EdgeItemViewModel(
+internal open class EdgeItemViewModel(
     key: EdgeState,
     private val creator: ViewCreator?,
     private val layoutId: Int
@@ -95,11 +167,9 @@ class Config {
     var loadingViewCreator: ViewCreator? = null
     var emptyViewCreator: ViewCreator? = null
     var failureViewCreator: ViewCreator? = null
-    var failureRetry: (() -> Unit)? = null
 
     var loadMoreOnFooter = true
     var footerLoadingViewCreator: ViewCreator? = null
     var footerNoMoreViewCreator: ViewCreator? = null
     var footerFailureViewCreator: ViewCreator? = null
-    var footerFailureRetry: (() -> Unit)? = null
 }

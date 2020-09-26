@@ -1,6 +1,7 @@
 package com.worktile.ui.recyclerview
 
 import android.util.Log
+import android.util.SparseArray
 import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.LifecycleOwner
@@ -13,13 +14,14 @@ import kotlinx.coroutines.withContext
 typealias ViewCreator = (parent: ViewGroup) -> View
 
 class SimpleAdapter<T>(
-    private val data: MutableList<T>,
+    internal val data: MutableList<T>,
     private val lifecycleOwner: LifecycleOwner
 ) : RecyclerView.Adapter<ItemViewHolder>() where T : ItemViewModel, T : ItemBinder {
     private val typeToAdapterTypeMap = hashMapOf<Any, Int>()
     private val adapterTypeToViewCreatorMap = hashMapOf<Int, ViewCreator>()
     private var typeIndex = 0
-    private var contentList = mutableListOf<Array<ContentItem<*>>?>()
+    private var contentSparseArray = SparseArray<Array<ContentItem<*>>?>()
+    var isLoadingMore: Boolean = false
 
     override fun getItemViewType(position: Int): Int {
         val itemData = data[position]
@@ -40,19 +42,19 @@ class SimpleAdapter<T>(
     }
 
     override fun onBindViewHolder(holder: ItemViewHolder, position: Int) {
-        contentList.add(position, data[position].content())
+        contentSparseArray.put(position, data[position].content())
         data[position].bind(holder.itemView)
     }
 
     override fun getItemCount(): Int {
         val size = data.size
-        if (contentList.size > size + 10) {
-            contentList = contentList.slice(0 until size).toMutableList()
+        if (contentSparseArray.size() > size + 10) {
+            contentSparseArray.removeAtRange(size, contentSparseArray.size() - size)
         }
         return size
     }
 
-    fun updateData(newData: List<T>, updateListener: (() -> Unit)? = null) = lifecycleOwner.lifecycleScope.launchWhenStarted{
+    fun updateData(newData: List<T>, updateListener: (() -> Unit)? = null) = lifecycleOwner.lifecycleScope.launchWhenStarted {
         val diffResult = withContext(Dispatchers.Default) {
             DiffUtil.calculateDiff(object : DiffUtil.Callback() {
                 override fun getOldListSize() = data.size
@@ -64,7 +66,7 @@ class SimpleAdapter<T>(
                 }
 
                 override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                    val oldContent = contentList.elementAtOrNull(oldItemPosition)
+                    val oldContent = contentSparseArray[oldItemPosition]
                     val newContent = newData[newItemPosition].content()
                     if (oldContent == null || newContent == null) {
                         return false
