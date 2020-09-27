@@ -9,7 +9,7 @@ import com.worktile.ui.recyclerview.LoadingState
 interface RecyclerViewViewModel {
     val recyclerViewData: MutableLiveData<MutableList<Definition>>
     val loadingState: MutableLiveData<LoadingState>
-    val footerState: MutableLiveData<EdgeStatePair>
+    val edgeState: MutableLiveData<EdgeStatePair>
     val onLoadFailedRetry: (() -> Unit)?
     val onLoadMore: (() -> Unit)?
     val onLoadMoreRetry: (() -> Unit)?
@@ -19,7 +19,7 @@ interface RecyclerViewViewModel {
         fun default() = object : RecyclerViewViewModel {
             override val recyclerViewData = MutableLiveData<MutableList<Definition>>(mutableListOf())
             override val loadingState = MutableLiveData(LoadingState.INIT)
-            override val footerState = MutableLiveData(EdgeStatePair(EdgeState.INIT, this, recyclerViewData.value ?: mutableListOf()))
+            override val edgeState = MutableLiveData(EdgeStatePair(EdgeState.INIT, this, recyclerViewData.value ?: mutableListOf()))
             override val onLoadFailedRetry: (() -> Unit)? = null
             override val onLoadMore: (() -> Unit)? = null
             override val onLoadMoreRetry: (() -> Unit)? = null

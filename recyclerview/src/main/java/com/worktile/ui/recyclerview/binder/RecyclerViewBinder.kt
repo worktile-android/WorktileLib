@@ -1,13 +1,12 @@
 package com.worktile.ui.recyclerview.binder
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.worktile.ui.recyclerview.*
-import com.worktile.ui.recyclerview.viewmodels.EdgeStatePair
+import com.worktile.ui.recyclerview.utils.set
 import com.worktile.ui.recyclerview.viewmodels.LoadingStateItemViewModel
 import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
 import kotlinx.android.synthetic.main.item_empty.view.*
@@ -47,7 +46,6 @@ fun RecyclerView.bind(
         val cloneDataList = mutableListOf<Definition>()
         cloneDataList.addAll(it)
         adapter?.run {
-            println("recyclerViewData update")
             updateData({ cloneDataList })
         } ?: run {
             adapter = SimpleAdapter(cloneDataList, owner)
@@ -91,20 +89,24 @@ fun RecyclerView.bind(
                 }
             }
 
-            fun updateFooterItemViewModel(currentData: MutableList<Definition>, footerItemViewModel: EdgeItemViewModel?) {
-                val clonedData = mutableListOf<Definition>().apply {
-                    addAll(currentData)
-                }
-                footerItemViewModel?.run {
-                    clonedData.add(footerItemViewModel)
-                }
-                println("footer update")
-                adapter?.updateData({ clonedData }) {
-                    scrollToPosition((adapter?.itemCount ?: 1) - 1)
+            fun updateFooterItemViewModel(
+                currentData: MutableList<Definition>,
+                footerItemViewModel: EdgeItemViewModel?,
+                scrollToEnd: Boolean = false
+            ) {
+                adapter?.updateData({
+                    mutableListOf<Definition>().apply {
+                        addAll(currentData)
+                        footerItemViewModel?.run {
+                            add(footerItemViewModel)
+                        }
+                    }
+                }) {
+                    if (scrollToEnd) scrollToPosition((adapter?.itemCount ?: 1) - 1)
                 }
             }
 
-            data.footerState.observe(owner) footer@ { statePair ->
+            data.edgeState.observe(owner) footer@ { statePair ->
                 if (!config.loadMoreOnFooter) return@footer
                 when (statePair.state) {
                     EdgeState.LOADING -> {
@@ -115,7 +117,8 @@ fun RecyclerView.bind(
                                 EdgeState.LOADING,
                                 config.footerLoadingViewCreator,
                                 R.layout.item_footer_loading
-                            )
+                            ),
+                            true
                         )
                     }
 
@@ -141,11 +144,7 @@ fun RecyclerView.bind(
                                 super.viewCreator().invoke(parent).apply {
                                     if (data.onLoadMoreRetry != null) {
                                         setOnClickListener {
-                                            data.footerState.value = EdgeStatePair(
-                                                EdgeState.LOADING,
-                                                statePair.viewModel,
-                                                statePair.currentData
-                                            )
+                                            data.edgeState set EdgeState.LOADING
                                             data.onLoadMoreRetry?.invoke()
                                         }
                                     }

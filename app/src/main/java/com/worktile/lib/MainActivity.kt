@@ -101,26 +101,26 @@ class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
     }
 
     fun footerLoading() {
-        footerState set EdgeState.LOADING
+        edgeState set EdgeState.LOADING
     }
 
     fun footerNoMore() {
-        footerState set EdgeState.NO_MORE
+        edgeState set EdgeState.NO_MORE
     }
 
     fun footerFailed() {
-        footerState set EdgeState.FAILED
+        edgeState set EdgeState.FAILED
     }
 
     fun footerSuccess() {
-        footerState set EdgeState.SUCCESS
+        edgeState set EdgeState.SUCCESS
     }
 
     override val onLoadMore = {
-        footerState set EdgeState.LOADING
+        edgeState set EdgeState.LOADING
         GlobalScope.launch {
             withContext(Dispatchers.IO) { delay(1000) }
-            footerState set EdgeState.FAILED
+            edgeState set EdgeState.FAILED
         }
         Unit
     }
@@ -129,7 +129,7 @@ class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
         GlobalScope.launch {
             withContext(Dispatchers.Default) { delay(1000) }
             println("current data size: ${recyclerViewData.value?.size}")
-            footerState set EdgeState.SUCCESS
+
             originData.forEach {
                 recyclerViewData.value?.add(object : Test2ItemViewModel {
                     private val key = UUID.randomUUID()
@@ -138,6 +138,8 @@ class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
                 })
             }
             recyclerViewData.notifyChanged()
+
+            edgeState set EdgeState.SUCCESS
         }
         Unit
     }

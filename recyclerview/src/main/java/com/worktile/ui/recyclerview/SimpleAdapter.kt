@@ -62,11 +62,9 @@ class SimpleAdapter<T>(
     }
 
     fun updateData(prepareNewData: () -> List<T>, updateListener: (() -> Unit)? = null) {
-        val newData = prepareNewData.invoke()
-
         diffThreadExecutor.execute {
             runBlocking {
-                println("diff in ${Thread.currentThread().name}-${Thread.currentThread().id}")
+                val newData = prepareNewData.invoke()
                 val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
                     override fun getOldListSize() = data.size
 
@@ -127,7 +125,6 @@ class SimpleAdapter<T>(
                 })
 
                 withContext(Dispatchers.Main) {
-                    println("update ui in ${Thread.currentThread().name}-${Thread.currentThread().id}")
                     data.clear()
                     data.addAll(newData)
                     diffResult.dispatchUpdatesTo(this@SimpleAdapter)

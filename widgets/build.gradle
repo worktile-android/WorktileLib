@@ -1,6 +1,9 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
+apply plugin: 'maven-publish'
+
+// com.worktile.ui:widgets:version
 
 android {
     compileSdkVersion 29
@@ -34,4 +37,31 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
     api project(path: ':base')
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            // Creates a Maven publication called "release".
+            release(MavenPublication) {
+                // Applies the component for the release build variant.
+                from components.release
+
+                // You can then customize attributes of the publication as shown below.
+                groupId = 'com.worktile.ui'
+                artifactId = 'widgets'
+                version = '0.0.1'
+            }
+        }
+
+        repositories {
+            maven { url "https://maven.mokimatrix.com/repository/worktile/"
+                credentials {
+                    username 'admin'
+                    password MAVEN_PASSWORD
+                }
+            }
+
+        }
+    }
 }
