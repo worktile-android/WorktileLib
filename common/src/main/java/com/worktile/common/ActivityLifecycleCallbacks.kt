@@ -1,4 +1,4 @@
-package com.worktile.base
+package com.worktile.common
 
 import android.app.Activity
 import android.app.Application

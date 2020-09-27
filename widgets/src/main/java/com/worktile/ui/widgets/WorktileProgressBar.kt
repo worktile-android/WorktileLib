@@ -9,7 +9,7 @@ import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.View
 import android.view.animation.LinearInterpolator
-import com.worktile.base.utils.UnitConversion.dp2px
+import com.worktile.common.utils.UnitConversion.dp2px
 
 /**
  * @Created by zhangqian on 2017/8/21.

@@ -6,8 +6,8 @@ import android.graphics.Paint
 import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
-import com.worktile.base.Worktile
-import com.worktile.base.utils.UnitConversion
+import com.worktile.common.Worktile
+import com.worktile.common.utils.UnitConversion
 
 class LineDecoration : RecyclerView.ItemDecoration() {
     private val paint: Paint = Paint()

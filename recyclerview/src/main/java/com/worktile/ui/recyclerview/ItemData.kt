@@ -2,9 +2,8 @@ package com.worktile.ui.recyclerview
 
 import android.view.View
 import androidx.lifecycle.LiveData
-import com.worktile.base.arch.viewmodel.BaseViewModel
+import com.worktile.common.arch.viewmodel.BaseViewModel
 import java.lang.reflect.Field
-import java.util.*
 
 interface ItemBinder {
     fun viewCreator(): ViewCreator

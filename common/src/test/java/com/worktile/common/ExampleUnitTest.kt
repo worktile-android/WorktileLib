@@ -1,4 +1,4 @@
-package com.worktile.base
+package com.worktile.common
 
 import org.junit.Test
 

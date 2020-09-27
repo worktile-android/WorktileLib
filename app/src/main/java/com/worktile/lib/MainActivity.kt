@@ -9,8 +9,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.worktile.base.arch.livedata.notifyChanged
-import com.worktile.base.arch.viewmodel.default
+import com.worktile.common.arch.livedata.notifyChanged
+import com.worktile.common.arch.viewmodel.default
 import com.worktile.ui.recyclerview.*
 import com.worktile.ui.recyclerview.binder.bind
 import com.worktile.ui.recyclerview.LoadingState

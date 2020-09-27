@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'maven-publish'
 
-// com.worktile:base:version
+// com.worktile:common:version
 
 android {
     compileSdkVersion 29
@@ -52,7 +52,7 @@ afterEvaluate {
 
                 // You can then customize attributes of the publication as shown below.
                 groupId = 'com.worktile'
-                artifactId = 'base'
+                artifactId = 'common'
                 version = '0.0.1'
             }
         }

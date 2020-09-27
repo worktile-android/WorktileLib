@@ -1,4 +1,4 @@
-package com.worktile.base.utils
+package com.worktile.common.utils
 
 import android.content.Context
 

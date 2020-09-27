@@ -1,7 +1,7 @@
 package com.worktile.ui.recyclerview.viewmodels
 
 import androidx.lifecycle.MutableLiveData
-import com.worktile.base.arch.viewmodel.Default
+import com.worktile.common.arch.viewmodel.Default
 import com.worktile.ui.recyclerview.Definition
 import com.worktile.ui.recyclerview.EdgeState
 import com.worktile.ui.recyclerview.LoadingState

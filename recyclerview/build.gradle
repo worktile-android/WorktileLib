@@ -44,9 +44,9 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
-    debugApi project(path: ':base')
+    debugApi project(path: ':common')
     debugApi project(path: ':widgets')
-    releaseApi 'com.worktile:base:0.0.1'
+    releaseApi 'com.worktile:common:0.0.1'
     releaseApi 'com.worktile.ui:widgets:0.0.1'
 }
 
