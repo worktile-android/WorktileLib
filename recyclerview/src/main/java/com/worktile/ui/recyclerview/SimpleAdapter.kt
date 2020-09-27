@@ -4,24 +4,31 @@ import android.util.Log
 import android.util.SparseArray
 import android.view.View
 import android.view.ViewGroup
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.*
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
+import java.lang.Runnable
+import java.util.concurrent.Executors
+import java.util.concurrent.ThreadFactory
 
 typealias ViewCreator = (parent: ViewGroup) -> View
 
 class SimpleAdapter<T>(
-    internal val data: MutableList<T>,
+    val data: MutableList<T>,
     private val lifecycleOwner: LifecycleOwner
-) : RecyclerView.Adapter<ItemViewHolder>() where T : ItemViewModel, T : ItemBinder {
+) : RecyclerView.Adapter<ItemViewHolder>(), LifecycleObserver where T : ItemViewModel, T : ItemBinder {
     private val typeToAdapterTypeMap = hashMapOf<Any, Int>()
     private val adapterTypeToViewCreatorMap = hashMapOf<Int, ViewCreator>()
     private var typeIndex = 0
     private var contentSparseArray = SparseArray<Array<ContentItem<*>>?>()
     var isLoadingMore: Boolean = false
+    private val diffThreadExecutor = Executors.newSingleThreadExecutor()
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+    fun onLifecycleOwnerDestroy() {
+        diffThreadExecutor.shutdown()
+    }
 
     override fun getItemViewType(position: Int): Int {
         val itemData = data[position]
@@ -54,71 +61,80 @@ class SimpleAdapter<T>(
         return size
     }
 
-    fun updateData(newData: List<T>, updateListener: (() -> Unit)? = null) = lifecycleOwner.lifecycleScope.launchWhenStarted {
-        val diffResult = withContext(Dispatchers.Default) {
-            DiffUtil.calculateDiff(object : DiffUtil.Callback() {
-                override fun getOldListSize() = data.size
+    fun updateData(prepareNewData: () -> List<T>, updateListener: (() -> Unit)? = null) {
+        val newData = prepareNewData.invoke()
 
-                override fun getNewListSize() = newData.size
+        diffThreadExecutor.execute {
+            runBlocking {
+                println("diff in ${Thread.currentThread().name}-${Thread.currentThread().id}")
+                val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+                    override fun getOldListSize() = data.size
 
-                override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                    return data[oldItemPosition].key() == newData[newItemPosition].key()
-                }
+                    override fun getNewListSize() = newData.size
 
-                override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                    val oldContent = contentSparseArray[oldItemPosition]
-                    val newContent = newData[newItemPosition].content()
-                    if (oldContent == null || newContent == null) {
-                        return false
-                    }
-                    if (oldContent.size != newContent.size) {
-                        return false
+                    override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                        return data[oldItemPosition].key() == newData[newItemPosition].key()
                     }
 
-                    oldContent.forEachIndexed { index, oldContentItem ->
-                        val newContentItem = newContent[index]
-                        if (oldContentItem.value == null && newContentItem.value == null) {
-                            return@forEachIndexed
-                        }
-                        if (oldContentItem.value == null || newContentItem.value == null) {
+                    override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                        val oldContent = contentSparseArray[oldItemPosition]
+                        val newContent = newData[newItemPosition].content()
+                        if (oldContent == null || newContent == null) {
                             return false
                         }
-                        if (oldContentItem.value::class != newContentItem.value::class) {
+                        if (oldContent.size != newContent.size) {
                             return false
                         }
-                        val oldComparatorResult = oldContentItem.comparator?.compare(
-                            oldContentItem.value,
-                            newContentItem.value
-                        )
-                        val newComparatorResult = newContentItem.comparator?.compare(
-                            oldContentItem.value,
-                            newContentItem.value
-                        )
-                        if (oldComparatorResult != null && newComparatorResult != null) {
-                            if (oldComparatorResult != newComparatorResult) {
-                                Log.w("SimpleAdapter", "item ${data[oldItemPosition].key()}前后两次对比结果不同")
+
+                        oldContent.forEachIndexed { index, oldContentItem ->
+                            val newContentItem = newContent[index]
+                            if (oldContentItem.value == null && newContentItem.value == null) {
+                                return@forEachIndexed
+                            }
+                            if (oldContentItem.value == null || newContentItem.value == null) {
                                 return false
+                            }
+                            if (oldContentItem.value::class != newContentItem.value::class) {
+                                return false
+                            }
+                            val oldComparatorResult = oldContentItem.comparator?.compare(
+                                oldContentItem.value,
+                                newContentItem.value
+                            )
+                            val newComparatorResult = newContentItem.comparator?.compare(
+                                oldContentItem.value,
+                                newContentItem.value
+                            )
+                            if (oldComparatorResult != null && newComparatorResult != null) {
+                                if (oldComparatorResult != newComparatorResult) {
+                                    Log.w("SimpleAdapter", "item ${data[oldItemPosition].key()}前后两次对比结果不同")
+                                    return false
+                                } else {
+                                    val result = oldComparatorResult && newComparatorResult
+                                    if (result) return@forEachIndexed else return false
+                                }
+                            } else if (oldComparatorResult == null && newComparatorResult == null) {
+                                val result = oldContentItem.value == newContentItem.value
+                                if (result) return@forEachIndexed else return false
                             } else {
-                                val result = oldComparatorResult && newComparatorResult
+                                val result = (oldComparatorResult ?: true) && (newComparatorResult ?: true)
                                 if (result) return@forEachIndexed else return false
                             }
-                        } else if (oldComparatorResult == null && newComparatorResult == null) {
-                            val result = oldContentItem.value == newContentItem.value
-                            if (result) return@forEachIndexed else return false
-                        } else {
-                            val result = (oldComparatorResult ?: true) && (newComparatorResult ?: true)
-                            if (result) return@forEachIndexed else return false
                         }
-                    }
 
-                    return true
+                        return true
+                    }
+                })
+
+                withContext(Dispatchers.Main) {
+                    println("update ui in ${Thread.currentThread().name}-${Thread.currentThread().id}")
+                    data.clear()
+                    data.addAll(newData)
+                    diffResult.dispatchUpdatesTo(this@SimpleAdapter)
+                    updateListener?.invoke()
                 }
-            })
+            }
         }
-        data.clear()
-        data.addAll(newData)
-        diffResult.dispatchUpdatesTo(this@SimpleAdapter)
-        updateListener?.invoke()
     }
 }
 

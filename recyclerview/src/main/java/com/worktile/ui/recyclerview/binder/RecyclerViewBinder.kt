@@ -7,6 +7,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.worktile.ui.recyclerview.*
+import com.worktile.ui.recyclerview.viewmodels.EdgeStatePair
 import com.worktile.ui.recyclerview.viewmodels.LoadingStateItemViewModel
 import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
 import kotlinx.android.synthetic.main.item_empty.view.*
@@ -45,8 +46,12 @@ fun RecyclerView.bind(
     data.recyclerViewData.observe(owner) {
         val cloneDataList = mutableListOf<Definition>()
         cloneDataList.addAll(it)
-        adapter?.updateData(cloneDataList) ?: run {
+        adapter?.run {
+            println("recyclerViewData update")
+            updateData({ cloneDataList })
+        } ?: run {
             adapter = SimpleAdapter(cloneDataList, owner)
+            owner.lifecycle.addObserver(adapter!!)
             setAdapter(adapter)
             layoutManager = LinearLayoutManager(this.context)
 
@@ -78,31 +83,34 @@ fun RecyclerView.bind(
 
             data.loadingState.observe(owner) { state ->
                 when (state) {
-                    LoadingState.LOADING -> adapter?.updateData(listOf(loadingItemViewModel))
-                    LoadingState.EMPTY -> adapter?.updateData(listOf(emptyItemViewModel))
-                    LoadingState.FAILED -> adapter?.updateData(listOf(failureItemViewModel))
-                    LoadingState.SUCCESS -> adapter?.updateData(emptyList())
+                    LoadingState.LOADING -> adapter?.updateData({ listOf(loadingItemViewModel) })
+                    LoadingState.EMPTY -> adapter?.updateData({ listOf(emptyItemViewModel) })
+                    LoadingState.FAILED -> adapter?.updateData({ listOf(failureItemViewModel) })
+                    LoadingState.SUCCESS -> adapter?.updateData({ emptyList() })
                     else -> {}
                 }
             }
 
-            fun updateFooterItemViewModel(footerItemViewModel: EdgeItemViewModel?) {
-                val clonedDataList = mutableListOf<Definition>()
-                clonedDataList.addAll(data.recyclerViewData.value ?: emptyList())
+            fun updateFooterItemViewModel(currentData: MutableList<Definition>, footerItemViewModel: EdgeItemViewModel?) {
+                val clonedData = mutableListOf<Definition>().apply {
+                    addAll(currentData)
+                }
                 footerItemViewModel?.run {
-                    clonedDataList.add(footerItemViewModel)
-                    adapter?.updateData(clonedDataList) {
-                        scrollToPosition((adapter?.itemCount ?: 1) - 1)
-                    }
+                    clonedData.add(footerItemViewModel)
+                }
+                println("footer update")
+                adapter?.updateData({ clonedData }) {
+                    scrollToPosition((adapter?.itemCount ?: 1) - 1)
                 }
             }
 
-            data.footerState.observe(owner) footer@ { state ->
+            data.footerState.observe(owner) footer@ { statePair ->
                 if (!config.loadMoreOnFooter) return@footer
-                when (state) {
+                when (statePair.state) {
                     EdgeState.LOADING -> {
                         adapter?.isLoadingMore = true
                         updateFooterItemViewModel(
+                            statePair.currentData,
                             EdgeItemViewModel(
                                 EdgeState.LOADING,
                                 config.footerLoadingViewCreator,
@@ -114,6 +122,7 @@ fun RecyclerView.bind(
                     EdgeState.NO_MORE -> {
                         adapter?.isLoadingMore = false
                         updateFooterItemViewModel(
+                            statePair.currentData,
                             EdgeItemViewModel(
                                 EdgeState.NO_MORE,
                                 config.footerNoMoreViewCreator,
@@ -123,7 +132,7 @@ fun RecyclerView.bind(
                     }
 
                     EdgeState.FAILED -> {
-                        updateFooterItemViewModel(object : EdgeItemViewModel(
+                        updateFooterItemViewModel(statePair.currentData, object : EdgeItemViewModel(
                             EdgeState.FAILED,
                             config.footerFailureViewCreator,
                             R.layout.item_footer_failed
@@ -132,7 +141,11 @@ fun RecyclerView.bind(
                                 super.viewCreator().invoke(parent).apply {
                                     if (data.onLoadMoreRetry != null) {
                                         setOnClickListener {
-                                            data.footerState.value = EdgeState.LOADING
+                                            data.footerState.value = EdgeStatePair(
+                                                EdgeState.LOADING,
+                                                statePair.viewModel,
+                                                statePair.currentData
+                                            )
                                             data.onLoadMoreRetry?.invoke()
                                         }
                                     }
@@ -143,7 +156,7 @@ fun RecyclerView.bind(
 
                     EdgeState.SUCCESS -> {
                         adapter?.isLoadingMore = false
-                        updateFooterItemViewModel(null)
+                        updateFooterItemViewModel(statePair.currentData,null)
                     }
 
                     else -> {}

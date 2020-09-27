@@ -9,15 +9,16 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.worktile.base.arch.notifyChanged
+import com.worktile.base.arch.livedata.notifyChanged
 import com.worktile.base.arch.viewmodel.default
 import com.worktile.ui.recyclerview.*
 import com.worktile.ui.recyclerview.binder.bind
 import com.worktile.ui.recyclerview.LoadingState
-import com.worktile.ui.recyclerview.binder.Config
+import com.worktile.ui.recyclerview.utils.set
 import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
     @ExperimentalStdlibApi
@@ -58,7 +59,6 @@ class MainActivity : AppCompatActivity() {
 class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
     private val originData = arrayOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ,"16", "17", "18", "11", "101","9", "10" ,"16", "17", "18", "11", "101",
         "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ,"16", "17", "18", "11", "101","9", "10" ,"16", "17", "18", "11", "101")
-    private var keyIndex = 0
 
     init {
         recyclerViewData.value?.add(object : Test2ItemViewModel {
@@ -68,7 +68,7 @@ class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
 
         originData.forEach {
             recyclerViewData.value?.add(object : TestItemViewModel {
-                private val key = keyIndex++
+                private val key = UUID.randomUUID()
                 override val title = MutableLiveData(it)
                 override fun key() = key
             })
@@ -101,36 +101,38 @@ class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
     }
 
     fun footerLoading() {
-        footerState.value = EdgeState.LOADING
+        footerState set EdgeState.LOADING
     }
 
     fun footerNoMore() {
-        footerState.value = EdgeState.NO_MORE
+        footerState set EdgeState.NO_MORE
     }
 
     fun footerFailed() {
-        footerState.value = EdgeState.FAILED
+        footerState set EdgeState.FAILED
     }
 
     fun footerSuccess() {
-        footerState.value = EdgeState.SUCCESS
+        footerState set EdgeState.SUCCESS
     }
 
-    override val onLoadMore: (() -> Unit)? = {
-        footerState.value = EdgeState.LOADING
+    override val onLoadMore = {
+        footerState set EdgeState.LOADING
         GlobalScope.launch {
-            withContext(Dispatchers.IO) { delay(3000) }
-            footerState.postValue(EdgeState.FAILED)
+            withContext(Dispatchers.IO) { delay(1000) }
+            footerState set EdgeState.FAILED
         }
+        Unit
     }
 
     override val onLoadMoreRetry = {
         GlobalScope.launch {
-            withContext(Dispatchers.Default) { delay(3000) }
-            footerState.postValue(EdgeState.SUCCESS)
+            withContext(Dispatchers.Default) { delay(1000) }
+            println("current data size: ${recyclerViewData.value?.size}")
+            footerState set EdgeState.SUCCESS
             originData.forEach {
                 recyclerViewData.value?.add(object : Test2ItemViewModel {
-                    private val key = keyIndex++
+                    private val key = UUID.randomUUID()
                     override var title = it
                     override fun key() = key
                 })
