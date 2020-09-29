@@ -3,7 +3,9 @@ package com.worktile.ui.recyclerview
 import android.view.View
 import androidx.lifecycle.LiveData
 import com.worktile.common.arch.viewmodel.BaseViewModel
+import com.worktile.common.arch.viewmodel.Default
 import java.lang.reflect.Field
+import java.util.*
 
 interface ItemBinder {
     fun viewCreator(): ViewCreator
@@ -52,6 +54,16 @@ interface DiffItemViewModel : ItemViewModel {
                 contentList.add(ContentItem(it.get(this)))
             }
         return contentList.toTypedArray()
+    }
+
+    companion object {
+        @Default
+        fun create(): DiffItemViewModel {
+            return object : DiffItemViewModel {
+                val key = UUID.randomUUID()
+                override fun key() = key
+            }
+        }
     }
 }
 

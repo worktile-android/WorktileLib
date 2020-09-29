@@ -61,14 +61,14 @@ afterEvaluate {
                 // You can then customize attributes of the publication as shown below.
                 groupId = 'com.worktile.ui'
                 artifactId = 'recyclerview'
-                version = '0.9.0'
+                version = '0.9.1'
             }
         }
 
         repositories {
             maven { url "https://maven.mokimatrix.com/repository/worktile/"
                 credentials {
-                    username 'admin'
+                    username MAVEN_USERNAME
                     password MAVEN_PASSWORD
                 }
             }
