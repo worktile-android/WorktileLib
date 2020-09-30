@@ -1,7 +1,7 @@
 package com.worktile.lib
 
 import com.worktile.json.annotation.Deserializer
-import com.worktile.json.dsl.parse
+import com.worktile.json.parse
 
 class Test {
     var value1 = 2
@@ -15,6 +15,7 @@ class Test {
             "456" then {
                 "678" into ::value2
             } into ::value1
+            "aaa" bindList ::value2
         }
     }
 }
