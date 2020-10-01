@@ -16,7 +16,7 @@ fun Any.parse(block: Parser.() -> Unit) {
     } ?: throw Exception("没有找到json, $this")
 }
 
-class Parser(parserData: ParserData) {
+open class Parser(parserData: ParserData) {
     val jsonObject = parserData.jsonObject
     val dsl = parserData.jsonDsl
 
@@ -56,6 +56,7 @@ class Parser(parserData: ParserData) {
     }
 
     inner class ThenResult(val key: String)
+
     inline infix fun <reified T> ThenResult.into(property: KMutableProperty0<T>) {
         key.into(property)
     }
