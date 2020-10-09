@@ -17,8 +17,6 @@ fun Any.parse(block: Parser.() -> Unit) {
 }
 
 open class Parser(val data: ParserData) {
-    val jsonObject = data.jsonObject
-    val dsl = data.jsonDsl
 
     infix fun parse(block: Parser.() -> Unit) {
         block.invoke(this)
@@ -39,11 +37,11 @@ open class Parser(val data: ParserData) {
     }
 
     inline infix fun <reified T> String.into(property: KMutableProperty0<T>): IntoResult<T?> {
-        val value = jsonObject.opt(this)
+        val value = data.jsonObject.opt(this)
         value?.run {
             when (value) {
                 is JSONObject -> {
-                    val result = dsl.parse(value) as T
+                    val result = data.jsonDsl.parse(value) as T
                     property.set(result)
                     return IntoResult(result)
                 }
@@ -54,22 +52,22 @@ open class Parser(val data: ParserData) {
                             val list = mutableListOf<Any>()
                             for (index in 0 until value.length()) {
                                 val itemJson = value[index] as JSONObject
-                                list.add(dsl.parse(itemJson, this))
+                                list.add(data.jsonDsl.parse(itemJson, this))
                             }
                             property.set(list as T)
                             return IntoResult(list)
                         } ?: Log.w(TAG, "找不到泛型类型")
                     } else {
-                        Log.w(TAG, "key ${this@into}对应的值是数组类型，但${property}不是。jsonObject: $jsonObject")
+                        Log.w(TAG, "key ${this@into}对应的值是数组类型，但${property}不是。jsonObject: ${data.jsonObject}")
                     }
                 }
                 is Number -> return checkTypeAndSet(Number::class, property, value)
                 is String -> return checkTypeAndSet(String::class, property, value)
                 else -> {
-                    Log.w(TAG, "无法解析，key：${this@into}, jsonObject: $jsonObject")
+                    Log.w(TAG, "无法解析，key：${this@into}, jsonObject: ${data.jsonObject}")
                 }
             }
-        } ?: Log.w(TAG, "key \"${this}\"不存在于${jsonObject}中")
+        } ?: Log.w(TAG, "key \"${this}\"不存在于${data.jsonObject}中")
         return IntoResult()
     }
 
@@ -80,14 +78,14 @@ open class Parser(val data: ParserData) {
     }
 
     infix fun String.then(block: Parser.() -> Unit): ThenResult {
-        val thenObject = jsonObject.opt(this@then)
+        val thenObject = data.jsonObject.opt(this@then)
         thenObject?.run {
             if (thenObject is JSONObject) {
-                block(Parser(ParserData(dsl, thenObject, this@then)))
+                block(Parser(ParserData(data.jsonDsl, thenObject, this@then)))
             } else {
                 Log.w(TAG, "key \"${this@then}\"对应的值不是JSONObject，无法执行then方法")
             }
-        } ?: Log.w(TAG, "key \"${this@then}\"不存在于${jsonObject}中")
+        } ?: Log.w(TAG, "key \"${this@then}\"不存在于${data.jsonObject}中")
         return ThenResult(this)
     }
 
@@ -117,7 +115,7 @@ open class Parser(val data: ParserData) {
 
     inline infix fun <reified T> AlterResult.into(property: KMutableProperty0<T>): IntoResult<T?> {
         alterKeys.forEach {
-            if (jsonObject.has(it)) {
+            if (data.jsonObject.has(it)) {
                 return it.into(property)
             }
         }
@@ -126,12 +124,12 @@ open class Parser(val data: ParserData) {
 
     inline infix fun <reified T> String.parse(block: Parser.(t: T) -> Unit): CustomParseResult<T> {
         val value = T::class.java.newInstance()
-        when (val thenObject = jsonObject.opt(this)) {
+        when (val thenObject = data.jsonObject.opt(this)) {
             null -> {
-                Log.w(TAG, "key \"${this}\"不存在于${jsonObject}中")
+                Log.w(TAG, "key \"${this}\"不存在于${data.jsonObject}中")
             }
             is JSONObject -> {
-                block.invoke(Parser(ParserData(dsl, thenObject, this)), value)
+                block.invoke(Parser(ParserData(data.jsonDsl, thenObject, this)), value)
             }
             else -> {
                 Log.w(TAG, "key \"${this}\"对应的值不是JSONObject，无法执行then方法")
