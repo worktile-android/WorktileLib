@@ -16,38 +16,74 @@ fun Any.parse(block: Parser.() -> Unit) {
     } ?: throw Exception("没有找到json, $this")
 }
 
-open class Parser(parserData: ParserData) {
-    val jsonObject = parserData.jsonObject
-    val dsl = parserData.jsonDsl
+open class Parser(val data: ParserData) {
+    val jsonObject = data.jsonObject
+    val dsl = data.jsonDsl
 
-    inline infix fun <reified T> String.into(property: KMutableProperty0<T>) {
+    infix fun parse(block: Parser.() -> Unit) {
+        block.invoke(this)
+    }
+
+    inline fun <reified T> checkTypeAndSet(
+        kClass: KClass<*>,
+        property: KMutableProperty0<T>,
+        value: Any
+    ): IntoResult<T?> {
+        if (kClass.java.isAssignableFrom(T::class.java)) {
+            property.set(value as T)
+            return IntoResult(value)
+        } else {
+            Log.w(TAG, "需要一个Number类型属性，但${value}不是")
+        }
+        return IntoResult()
+    }
+
+    inline infix fun <reified T> String.into(property: KMutableProperty0<T>): IntoResult<T?> {
         val value = jsonObject.opt(this)
         value?.run {
-            when (T::class) {
-                Number::class, String::class -> { property.set(value as T) }
-                else -> {
-                    when (value) {
-                        is JSONObject -> { property.set(dsl.parse(value)) }
-                        is JSONArray -> {
-                            val list = mutableListOf<T>()
+            when (value) {
+                is JSONObject -> {
+                    val result = dsl.parse(value) as T
+                    property.set(result)
+                    return IntoResult(result)
+                }
+                is JSONArray -> {
+                    if (List::class.java.isAssignableFrom(T::class.java)) {
+                        val argumentType = property.returnType.arguments[0]
+                        (argumentType.type?.classifier as? KClass<*>)?.apply {
+                            val list = mutableListOf<Any>()
                             for (index in 0 until value.length()) {
-
+                                val itemJson = value[index] as JSONObject
+                                list.add(dsl.parse(itemJson, this))
                             }
-                        }
-                        else -> {
-                            Log.w(TAG, "使用String.into方法将json解析成另一个类的对象时，需要一个JSONObject，但${value}不是")
-                        }
+                            property.set(list as T)
+                            return IntoResult(list)
+                        } ?: Log.w(TAG, "找不到泛型类型")
+                    } else {
+                        Log.w(TAG, "key ${this@into}对应的值是数组类型，但${property}不是。jsonObject: $jsonObject")
                     }
+                }
+                is Number -> return checkTypeAndSet(Number::class, property, value)
+                is String -> return checkTypeAndSet(String::class, property, value)
+                else -> {
+                    Log.w(TAG, "无法解析，key：${this@into}, jsonObject: $jsonObject")
                 }
             }
         } ?: Log.w(TAG, "key \"${this}\"不存在于${jsonObject}中")
+        return IntoResult()
+    }
+
+    inner class IntoResult<T>(val propertyValue: T? = null)
+
+    inline infix fun <reified T> IntoResult<T>.attach(block: Parser.(t: T?) -> Unit) {
+        block.invoke(this@Parser, this.propertyValue)
     }
 
     infix fun String.then(block: Parser.() -> Unit): ThenResult {
         val thenObject = jsonObject.opt(this@then)
         thenObject?.run {
             if (thenObject is JSONObject) {
-                block(Parser(ParserData(dsl, thenObject)))
+                block(Parser(ParserData(dsl, thenObject, this@then)))
             } else {
                 Log.w(TAG, "key \"${this@then}\"对应的值不是JSONObject，无法执行then方法")
             }
@@ -57,8 +93,8 @@ open class Parser(parserData: ParserData) {
 
     inner class ThenResult(val key: String)
 
-    inline infix fun <reified T> ThenResult.into(property: KMutableProperty0<T>) {
-        key.into(property)
+    inline infix fun <reified T> ThenResult.into(property: KMutableProperty0<T>): IntoResult<T?> {
+        return key.into(property)
     }
 
     infix fun String.alter(key: String): AlterResult {
@@ -79,20 +115,39 @@ open class Parser(parserData: ParserData) {
         return this
     }
 
-    inline infix fun <reified T> AlterResult.into(property: KMutableProperty0<T>) {
+    inline infix fun <reified T> AlterResult.into(property: KMutableProperty0<T>): IntoResult<T?> {
         alterKeys.forEach {
             if (jsonObject.has(it)) {
-                it.into(property)
-                return
+                return it.into(property)
             }
         }
+        return IntoResult()
     }
 
-    infix fun <T> String.bindList(listProperty: KMutableProperty0<List<T>>) {
-
+    inline infix fun <reified T> String.parse(block: Parser.(t: T) -> Unit): CustomParseResult<T> {
+        val value = T::class.java.newInstance()
+        when (val thenObject = jsonObject.opt(this)) {
+            null -> {
+                Log.w(TAG, "key \"${this}\"不存在于${jsonObject}中")
+            }
+            is JSONObject -> {
+                block.invoke(Parser(ParserData(dsl, thenObject, this)), value)
+            }
+            else -> {
+                Log.w(TAG, "key \"${this}\"对应的值不是JSONObject，无法执行then方法")
+            }
+        }
+        return CustomParseResult(value)
     }
 
-    infix fun <T> String.intoList(listProperty: KMutableProperty0<List<T>>) {
+    inner class CustomParseResult<T>(val value: T)
+
+    inline infix fun <reified T> CustomParseResult<T>.into(property: KMutableProperty0<in T>): IntoResult<T> {
+        property.set(value)
+        return IntoResult(value)
+    }
+
+    inline fun <reified T> String.parseList(block: Parser.() -> Unit) {
 
     }
 }

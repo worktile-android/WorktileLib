@@ -33,3 +33,7 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
+ext {
+    kotlin_reflect = "org.jetbrains.kotlin:kotlin-reflect:1.4.10"
+}
