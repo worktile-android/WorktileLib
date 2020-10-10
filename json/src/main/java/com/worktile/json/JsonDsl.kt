@@ -18,7 +18,7 @@ class JsonDsl {
             var found = false
             kClass.java.methods.forEach methods@ { method ->
                 method.annotations.forEach {
-                    if (it.javaClass == Deserializer::class.java) {
+                    if (it.annotationClass == Deserializer::class) {
                         found = true
                         method.invoke(this)
                         return@methods

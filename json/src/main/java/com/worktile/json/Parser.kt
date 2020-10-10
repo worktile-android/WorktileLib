@@ -3,7 +3,6 @@ package com.worktile.json
 import android.util.Log
 import org.json.JSONArray
 import org.json.JSONObject
-import java.lang.Exception
 import kotlin.reflect.KClass
 import kotlin.reflect.KMutableProperty0
 
@@ -58,13 +57,53 @@ open class Parser(val data: ParserData) {
                             return IntoResult(list)
                         } ?: Log.w(TAG, "找不到泛型类型")
                     } else {
-                        Log.w(TAG, "key ${this@into}对应的值是数组类型，但${property}不是。jsonObject: ${data.jsonObject}")
+                        Log.w(
+                            TAG,
+                            "key ${this@into}对应的值是数组类型，但${property}不是。jsonObject: ${data.jsonObject}"
+                        )
                     }
                 }
-                is Number -> return checkTypeAndSet(Number::class, property, value)
-                is String -> return checkTypeAndSet(String::class, property, value)
+                is Number -> {
+                    if (Number::class.java.isAssignableFrom(T::class.java)) {
+                        val numberResult = when (T::class) {
+                            Int::class -> value.toInt()
+                            Double::class -> value.toDouble()
+                            Long::class -> value.toLong()
+                            Float::class -> value.toFloat()
+                            Short::class -> value.toShort()
+                            Char::class -> value.toChar()
+                            Byte::class -> value.toByte()
+                            else -> 0
+                        }
+                        property.set(numberResult as T)
+                        return IntoResult(numberResult)
+                    } else {
+                        Log.w(TAG, "需要一个Number类型属性，但${value}不是")
+                    }
+                }
+                is String -> {
+                    if (String::class.java.isAssignableFrom(T::class.java)) {
+                        property.set(value as T)
+                        return IntoResult(value)
+                    } else {
+                        Log.w(TAG, "需要一个String类型属性，但${value}不是")
+                    }
+                }
+                is Boolean -> {
+                    if (Boolean::class == T::class) {
+                        property.set(value as T)
+                        return IntoResult(value)
+                    } else {
+                        Log.w(TAG, "需要一个Boolean类型属性，但${value}不是")
+                    }
+                }
+                JSONObject.NULL -> {
+                }
                 else -> {
-                    Log.w(TAG, "无法解析，key：${this@into}, jsonObject: ${data.jsonObject}")
+                    Log.w(
+                        TAG,
+                        "无法解析，key：${this@into}, value=${value::class} jsonObject: ${data.jsonObject}"
+                    )
                 }
             }
         } ?: Log.w(TAG, "key \"${this}\"不存在于${data.jsonObject}中")
