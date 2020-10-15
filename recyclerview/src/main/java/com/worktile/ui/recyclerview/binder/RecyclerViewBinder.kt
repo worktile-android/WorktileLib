@@ -42,125 +42,134 @@ fun RecyclerView.bind(
             }
         })
     }
+
+    fun initAdapter(dataList: MutableList<Definition>) {
+        adapter = SimpleAdapter(dataList, owner)
+        owner.lifecycle.addObserver(adapter!!)
+        setAdapter(adapter)
+        layoutManager = LinearLayoutManager(this.context)
+
+        val loadingItemViewModel = object : LoadingStateItemViewModel(LoadingState.LOADING) {
+            override fun viewCreator() = config.loadingViewCreator ?: { parent: ViewGroup ->
+                LayoutInflater.from(parent.context).inflate(R.layout.item_loading, parent, false)
+            }
+        }
+
+        val emptyItemViewModel = object : LoadingStateItemViewModel(LoadingState.EMPTY) {
+            override fun viewCreator() = config.emptyViewCreator ?: { parent: ViewGroup ->
+                LayoutInflater.from(parent.context).inflate(R.layout.item_empty, parent, false)
+            }
+        }
+
+        val failureItemViewModel = object : LoadingStateItemViewModel(LoadingState.FAILED) {
+            override fun viewCreator() = config.failureViewCreator ?: { parent: ViewGroup ->
+                LayoutInflater.from(parent.context).inflate(R.layout.item_empty, parent, false).apply {
+                    empty_hint.text = parent.context.getString(R.string.retry_hint)
+                    if (data.onLoadFailedRetry != null) {
+                        setOnClickListener {
+                            data.loadingState.value = LoadingState.LOADING
+                            data.onLoadFailedRetry?.invoke()
+                        }
+                    }
+                }
+            }
+        }
+
+        data.loadingState.observe(owner) { state ->
+            when (state) {
+                LoadingState.LOADING -> adapter?.updateData({ listOf(loadingItemViewModel) })
+                LoadingState.EMPTY -> adapter?.updateData({ listOf(emptyItemViewModel) })
+                LoadingState.FAILED -> adapter?.updateData({ listOf(failureItemViewModel) })
+                LoadingState.SUCCESS -> adapter?.updateData({ emptyList() })
+                else -> {}
+            }
+        }
+
+        fun updateFooterItemViewModel(
+            currentData: MutableList<Definition>,
+            footerItemViewModel: EdgeItemViewModel?,
+            scrollToEnd: Boolean = false
+        ) {
+            adapter?.updateData({
+                mutableListOf<Definition>().apply {
+                    addAll(currentData)
+                    footerItemViewModel?.run {
+                        add(footerItemViewModel)
+                    }
+                }
+            }) {
+                if (scrollToEnd) scrollToPosition((adapter?.itemCount ?: 1) - 1)
+            }
+        }
+
+        data.edgeState.observe(owner) footer@ { statePair ->
+            if (!config.loadMoreOnFooter) return@footer
+            when (statePair.state) {
+                EdgeState.LOADING -> {
+                    adapter?.isLoadingMore = true
+                    updateFooterItemViewModel(
+                        statePair.currentData,
+                        EdgeItemViewModel(
+                            EdgeState.LOADING,
+                            config.footerLoadingViewCreator,
+                            R.layout.item_footer_loading
+                        ),
+                        true
+                    )
+                }
+
+                EdgeState.NO_MORE -> {
+                    adapter?.isLoadingMore = false
+                    updateFooterItemViewModel(
+                        statePair.currentData,
+                        EdgeItemViewModel(
+                            EdgeState.NO_MORE,
+                            config.footerNoMoreViewCreator,
+                            R.layout.item_footer_no_more
+                        )
+                    )
+                }
+
+                EdgeState.FAILED -> {
+                    updateFooterItemViewModel(statePair.currentData, object : EdgeItemViewModel(
+                        EdgeState.FAILED,
+                        config.footerFailureViewCreator,
+                        R.layout.item_footer_failed
+                    ) {
+                        override fun viewCreator() = { parent: ViewGroup ->
+                            super.viewCreator().invoke(parent).apply {
+                                if (data.onLoadMoreRetry != null) {
+                                    setOnClickListener {
+                                        data.edgeState set EdgeState.LOADING
+                                        data.onLoadMoreRetry?.invoke()
+                                    }
+                                }
+                            }
+                        }
+                    })
+                }
+
+                EdgeState.SUCCESS -> {
+                    adapter?.isLoadingMore = false
+                    updateFooterItemViewModel(statePair.currentData,null)
+                }
+
+                else -> {}
+            }
+        }
+    }
+
+    data.recyclerViewData.value?.run {
+        initAdapter(this)
+    }
+
     data.recyclerViewData.observe(owner) {
         val cloneDataList = mutableListOf<Definition>()
         cloneDataList.addAll(it)
         adapter?.run {
             updateData({ cloneDataList })
         } ?: run {
-            adapter = SimpleAdapter(cloneDataList, owner)
-            owner.lifecycle.addObserver(adapter!!)
-            setAdapter(adapter)
-            layoutManager = LinearLayoutManager(this.context)
-
-            val loadingItemViewModel = object : LoadingStateItemViewModel(LoadingState.LOADING) {
-                override fun viewCreator() = config.loadingViewCreator ?: { parent: ViewGroup ->
-                    LayoutInflater.from(parent.context).inflate(R.layout.item_loading, parent, false)
-                }
-            }
-
-            val emptyItemViewModel = object : LoadingStateItemViewModel(LoadingState.EMPTY) {
-                override fun viewCreator() = config.emptyViewCreator ?: { parent: ViewGroup ->
-                    LayoutInflater.from(parent.context).inflate(R.layout.item_empty, parent, false)
-                }
-            }
-
-            val failureItemViewModel = object : LoadingStateItemViewModel(LoadingState.FAILED) {
-                override fun viewCreator() = config.failureViewCreator ?: { parent: ViewGroup ->
-                    LayoutInflater.from(parent.context).inflate(R.layout.item_empty, parent, false).apply {
-                        empty_hint.text = parent.context.getString(R.string.retry_hint)
-                        if (data.onLoadFailedRetry != null) {
-                            setOnClickListener {
-                                data.loadingState.value = LoadingState.LOADING
-                                data.onLoadFailedRetry?.invoke()
-                            }
-                        }
-                    }
-                }
-            }
-
-            data.loadingState.observe(owner) { state ->
-                when (state) {
-                    LoadingState.LOADING -> adapter?.updateData({ listOf(loadingItemViewModel) })
-                    LoadingState.EMPTY -> adapter?.updateData({ listOf(emptyItemViewModel) })
-                    LoadingState.FAILED -> adapter?.updateData({ listOf(failureItemViewModel) })
-                    LoadingState.SUCCESS -> adapter?.updateData({ emptyList() })
-                    else -> {}
-                }
-            }
-
-            fun updateFooterItemViewModel(
-                currentData: MutableList<Definition>,
-                footerItemViewModel: EdgeItemViewModel?,
-                scrollToEnd: Boolean = false
-            ) {
-                adapter?.updateData({
-                    mutableListOf<Definition>().apply {
-                        addAll(currentData)
-                        footerItemViewModel?.run {
-                            add(footerItemViewModel)
-                        }
-                    }
-                }) {
-                    if (scrollToEnd) scrollToPosition((adapter?.itemCount ?: 1) - 1)
-                }
-            }
-
-            data.edgeState.observe(owner) footer@ { statePair ->
-                if (!config.loadMoreOnFooter) return@footer
-                when (statePair.state) {
-                    EdgeState.LOADING -> {
-                        adapter?.isLoadingMore = true
-                        updateFooterItemViewModel(
-                            statePair.currentData,
-                            EdgeItemViewModel(
-                                EdgeState.LOADING,
-                                config.footerLoadingViewCreator,
-                                R.layout.item_footer_loading
-                            ),
-                            true
-                        )
-                    }
-
-                    EdgeState.NO_MORE -> {
-                        adapter?.isLoadingMore = false
-                        updateFooterItemViewModel(
-                            statePair.currentData,
-                            EdgeItemViewModel(
-                                EdgeState.NO_MORE,
-                                config.footerNoMoreViewCreator,
-                                R.layout.item_footer_no_more
-                            )
-                        )
-                    }
-
-                    EdgeState.FAILED -> {
-                        updateFooterItemViewModel(statePair.currentData, object : EdgeItemViewModel(
-                            EdgeState.FAILED,
-                            config.footerFailureViewCreator,
-                            R.layout.item_footer_failed
-                        ) {
-                            override fun viewCreator() = { parent: ViewGroup ->
-                                super.viewCreator().invoke(parent).apply {
-                                    if (data.onLoadMoreRetry != null) {
-                                        setOnClickListener {
-                                            data.edgeState set EdgeState.LOADING
-                                            data.onLoadMoreRetry?.invoke()
-                                        }
-                                    }
-                                }
-                            }
-                        })
-                    }
-
-                    EdgeState.SUCCESS -> {
-                        adapter?.isLoadingMore = false
-                        updateFooterItemViewModel(statePair.currentData,null)
-                    }
-
-                    else -> {}
-                }
-            }
+            initAdapter(cloneDataList)
         }
     }
 }

@@ -1,3 +1,4 @@
+include ':kanban'
 include ':json'
 include ':widgets'
 rootProject.name='WorktileLib'
