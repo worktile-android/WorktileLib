@@ -23,8 +23,29 @@ class ExampleInstrumentedTest {
 
     @Test
     fun jsonParse() {
-        val time = System.currentTimeMillis()
-        val entry = JsonDsl().parse<Entry>("{\"name\":\"xixi\",\"age\":1,\"weight\":99.9,\"height\":101010101,\"sex\":true,\"address\":null}")
-        println("DSL ${entry}")
+
+        val entry =
+            JsonDsl().parse<Entry>("{\"name\":\"xixi\",\"age\":1,\"weight\":99.9,\"height\":101010101,\"sex\":true,\"address\":null,\"child\":{\"name\":\"xixi\",\"age\":1,\"weight\":99.9,\"height\":101010101,\"sex\":true,\"address\":null},\"children\":[{\"name\":\"呆\"}]}")
+        assertEquals("xixi", entry.nameA)
+    }
+
+    @Test
+    fun parseObject() {
+        val entry =
+            JsonDsl().parse<Entry>("{\"name\":\"xixi\",\"age\":1,\"weight\":99.9,\"height\":101010101,\"sex\":true,\"address\":null,\"child\":{\"name\":\"xixi\",\"age\":1,\"weight\":99.9,\"height\":101010101,\"sex\":true,\"address\":null}}")
+        assertEquals("xixi", entry.child?.nameA)
+    }
+
+    @Test
+    fun checkSerializedOpt() {
+        val entry = JsonDsl().parse<Entry>("{\"name\":\"xixi\"}")
+        assertEquals("xixi", entry.nameA)
+    }
+
+    @Test
+    fun checkIgnoreOpt() {
+        val entry =
+            JsonDsl().parse<Entry>("{\"name\":\"xixi\",\"age\":1,\"weight\":99.9,\"height\":101010101,\"sex\":true,\"address\":null}")
+        assertEquals("xixi", entry.age)
     }
 }
