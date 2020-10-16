@@ -1,4 +1,4 @@
-package com.worktile.ui
+package com.worktile.ui.kanban.widget
 
 import android.content.Context
 import android.graphics.Rect
@@ -8,7 +8,9 @@ import android.view.Gravity
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
+import com.worktile.ui.R
 
 class Kanban : ViewGroup {
     constructor(context: Context) : super(context) {
