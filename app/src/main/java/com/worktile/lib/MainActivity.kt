@@ -89,15 +89,16 @@ class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
     }
 
     fun loading() {
-        loadingState.value = LoadingState.LOADING
+        loadingState set LoadingState.SUCCESS
+        loadingState set LoadingState.LOADING
     }
 
     fun empty() {
-        loadingState.value = LoadingState.EMPTY
+        loadingState set LoadingState.EMPTY
     }
 
     fun failed() {
-        loadingState.value = LoadingState.FAILED
+        loadingState set LoadingState.FAILED
     }
 
     fun footerLoading() {
