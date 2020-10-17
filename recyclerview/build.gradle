@@ -47,8 +47,8 @@ dependencies {
 
     debugApi project(path: ':common')
     debugApi project(path: ':widgets')
-    releaseApi 'com.worktile:common:0.0.1'
-    releaseApi 'com.worktile.ui:widgets:0.0.1'
+    releaseApi wt_common
+    releaseApi wt_widgets
 }
 
-configPublish.call(project, 'com.worktile.ui', 'recyclerview', '0.9.2')
+configPublish.call(project, 'com.worktile.ui', 'recyclerview', recyclerview_version)

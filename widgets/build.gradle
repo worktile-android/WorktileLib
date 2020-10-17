@@ -37,7 +37,7 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
     debugApi project(path: ':common')
-    releaseApi 'com.worktile:common:0.0.1'
+    releaseApi wt_common
 }
 
-configPublish.call(project, 'com.worktile.ui', 'widgets', '0.0.1')
+configPublish.call(project, 'com.worktile.ui', 'widgets', widgets_version)

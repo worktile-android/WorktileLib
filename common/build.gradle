@@ -41,4 +41,4 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 }
 
-configPublish.call(project, 'com.worktile', 'common', '0.0.1')
+configPublish.call(project, 'com.worktile', 'common', common_version)
