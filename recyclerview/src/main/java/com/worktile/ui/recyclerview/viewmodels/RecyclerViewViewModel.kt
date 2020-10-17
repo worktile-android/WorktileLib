@@ -2,12 +2,13 @@ package com.worktile.ui.recyclerview.viewmodels
 
 import androidx.lifecycle.MutableLiveData
 import com.worktile.common.arch.viewmodel.Default
-import com.worktile.ui.recyclerview.Definition
+import com.worktile.ui.recyclerview.ItemDefinition
 import com.worktile.ui.recyclerview.EdgeState
 import com.worktile.ui.recyclerview.LoadingState
+import com.worktile.ui.recyclerview.viewmodels.data.EdgeStatePair
 
 interface RecyclerViewViewModel {
-    val recyclerViewData: MutableLiveData<MutableList<Definition>>
+    val recyclerViewData: MutableLiveData<MutableList<ItemDefinition>>
     val loadingState: MutableLiveData<LoadingState>
     val edgeState: MutableLiveData<EdgeStatePair>
     val onLoadFailedRetry: (() -> Unit)?
@@ -17,7 +18,7 @@ interface RecyclerViewViewModel {
     companion object {
         @Default
         fun default() = object : RecyclerViewViewModel {
-            override val recyclerViewData = MutableLiveData<MutableList<Definition>>(mutableListOf())
+            override val recyclerViewData = MutableLiveData<MutableList<ItemDefinition>>(mutableListOf())
             override val loadingState = MutableLiveData(LoadingState.INIT)
             override val edgeState = MutableLiveData(EdgeStatePair(EdgeState.INIT, this, recyclerViewData.value ?: mutableListOf()))
             override val onLoadFailedRetry: (() -> Unit)? = null
@@ -26,9 +27,3 @@ interface RecyclerViewViewModel {
         }
     }
 }
-
-data class EdgeStatePair(
-    val state: EdgeState,
-    val viewModel: RecyclerViewViewModel,
-    val currentData: MutableList<Definition>
-)

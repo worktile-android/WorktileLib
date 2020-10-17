@@ -8,16 +8,14 @@ import androidx.lifecycle.*
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.*
-import java.lang.Runnable
 import java.util.concurrent.Executors
-import java.util.concurrent.ThreadFactory
 
 typealias ViewCreator = (parent: ViewGroup) -> View
 
 class SimpleAdapter<T>(
-    val data: MutableList<T>,
+    var data: MutableList<T>,
     private val lifecycleOwner: LifecycleOwner
-) : RecyclerView.Adapter<ItemViewHolder>(), LifecycleObserver where T : ItemViewModel, T : ItemBinder {
+) : RecyclerView.Adapter<SimpleAdapter.ItemViewHolder>(), LifecycleObserver where T : ItemViewModel, T : ItemBinder {
     private val typeToAdapterTypeMap = hashMapOf<Any, Int>()
     private val adapterTypeToViewCreatorMap = hashMapOf<Int, ViewCreator>()
     private var typeIndex = 0
@@ -61,17 +59,22 @@ class SimpleAdapter<T>(
         return size
     }
 
-    fun updateData(prepareNewData: () -> List<T>, updateListener: (() -> Unit)? = null) {
+    fun updateData(prepareNewData: () -> List<T>, debugKey: String? = null, updateCallback: (() -> Unit)? = null) {
         diffThreadExecutor.execute {
             runBlocking {
+                val oldData = data
                 val newData = prepareNewData.invoke()
+                if (BuildConfig.DEBUG) {
+                    Log.d(TAG, "calculateDiff, debugKey = $debugKey" +
+                            ", thread = { id: ${Thread.currentThread().id}, name: ${Thread.currentThread().name}}")
+                }
                 val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
-                    override fun getOldListSize() = data.size
+                    override fun getOldListSize() = oldData.size
 
                     override fun getNewListSize() = newData.size
 
                     override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                        return data[oldItemPosition].key() == newData[newItemPosition].key()
+                        return oldData[oldItemPosition].key() == newData[newItemPosition].key()
                     }
 
                     override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
@@ -105,7 +108,7 @@ class SimpleAdapter<T>(
                             )
                             if (oldComparatorResult != null && newComparatorResult != null) {
                                 if (oldComparatorResult != newComparatorResult) {
-                                    Log.w("SimpleAdapter", "item ${data[oldItemPosition].key()}前后两次对比结果不同")
+                                    Log.w("SimpleAdapter", "item ${oldData[oldItemPosition].key()}前后两次对比结果不同")
                                     return false
                                 } else {
                                     val result = oldComparatorResult && newComparatorResult
@@ -125,14 +128,16 @@ class SimpleAdapter<T>(
                 })
 
                 withContext(Dispatchers.Main) {
-                    data.clear()
-                    data.addAll(newData)
+                    data = newData.toMutableList()
                     diffResult.dispatchUpdatesTo(this@SimpleAdapter)
-                    updateListener?.invoke()
+                    updateCallback?.invoke()
+                    if (BuildConfig.DEBUG) {
+                        Log.d(TAG, "updateUi, debugKey = $debugKey")
+                    }
                 }
             }
         }
     }
-}
 
-class ItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
+    class ItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
+}

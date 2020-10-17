@@ -14,7 +14,7 @@ import com.worktile.common.arch.viewmodel.default
 import com.worktile.ui.recyclerview.*
 import com.worktile.ui.recyclerview.binder.bind
 import com.worktile.ui.recyclerview.LoadingState
-import com.worktile.ui.recyclerview.utils.set
+import com.worktile.ui.recyclerview.utils.livedata.set
 import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
@@ -145,7 +145,7 @@ class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
     }
 }
 
-interface TestItemViewModel : DiffLiveDataItemViewModel, Definition {
+interface TestItemViewModel : DiffLiveDataItemViewModel, ItemDefinition {
     val title: MutableLiveData<String>
 
     override fun viewCreator() = { parent: ViewGroup ->
@@ -161,7 +161,7 @@ interface TestItemViewModel : DiffLiveDataItemViewModel, Definition {
     override fun type(): Any = TestItemViewModel::class
 }
 
-interface Test2ItemViewModel : DiffItemViewModel, Definition {
+interface Test2ItemViewModel : DiffItemViewModel, ItemDefinition {
     var title: String
 
     override fun viewCreator() = { parent: ViewGroup ->

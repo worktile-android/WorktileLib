@@ -1,28 +1,21 @@
 package com.worktile.lib
 
-import android.graphics.Color
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStore
-import androidx.recyclerview.widget.ListAdapter
-import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.worktile.common.arch.livedata.notifyChanged
 import com.worktile.common.arch.viewmodel.default
-import com.worktile.ui.recyclerview.Definition
+import com.worktile.ui.recyclerview.ItemDefinition
 import com.worktile.ui.recyclerview.DiffItemViewModel
 import com.worktile.ui.recyclerview.ViewCreator
 import com.worktile.ui.recyclerview.binder.bind
 import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
-import kotlinx.android.synthetic.main.activity_kanban.*
 import kotlinx.android.synthetic.main.fragment_kanban_page.*
 
 class KanbanActivity : AppCompatActivity() {
@@ -86,7 +79,7 @@ class PageFragmentViewModel : RecyclerViewViewModel by default(), ViewModel() {
     }
 }
 
-interface Item : Definition {
+interface Item : ItemDefinition {
     val text: String
 
     override fun viewCreator(): ViewCreator = {
