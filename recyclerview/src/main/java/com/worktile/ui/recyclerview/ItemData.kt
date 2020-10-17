@@ -77,8 +77,5 @@ private fun getAllFields(obj: Any): List<Field> {
     return fields
 }
 
-@Deprecated(message = "rename to ItemDefinition")
-interface Definition : ItemViewModel, ItemBinder
-
-interface ItemDefinition : Definition
+interface ItemDefinition : ItemViewModel, ItemBinder
 
