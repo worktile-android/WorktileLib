@@ -40,6 +40,7 @@ dependencies {
     implementation appcompact
     implementation core_ktx
     implementation constraintlayout
+    implementation lifecycle_runtime_ktx
     api recyclerview
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'

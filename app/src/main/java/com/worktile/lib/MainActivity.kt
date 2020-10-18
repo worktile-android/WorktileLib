@@ -74,6 +74,8 @@ class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
             })
         }
         recyclerViewData.notifyChanged()
+//        loadingState set LoadingState.LOADING
+
     }
 
 
@@ -89,7 +91,7 @@ class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
     }
 
     fun loading() {
-        loadingState set LoadingState.SUCCESS
+//        loadingState set LoadingState.SUCCESS
         loadingState set LoadingState.LOADING
     }
 

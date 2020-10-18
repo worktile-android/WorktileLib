@@ -53,11 +53,31 @@ def configPublish(Project project, group, artifact, ver) {
                     artifactId = artifact
                     version = ver
                 }
+
+                debug(MavenPublication) {
+                    // Applies the component for the release build variant.
+                    from project.components.debug
+
+                    // You can then customize attributes of the publication as shown below.
+                    groupId = group
+                    artifactId = artifact
+                    version = ver
+                }
             }
 
             repositories {
                 maven {
+                    name "worktile"
                     url "https://maven.mokimatrix.com/repository/worktile/"
+                    credentials {
+                        it.username = MAVEN_USERNAME
+                        it.password = MAVEN_PASSWORD
+                    }
+                }
+
+                maven {
+                    name "debug"
+                    url "https://maven.mokimatrix.com/repository/debug/"
                     credentials {
                         it.username = MAVEN_USERNAME
                         it.password = MAVEN_PASSWORD
@@ -71,7 +91,7 @@ def configPublish(Project project, group, artifact, ver) {
 ext {
     common_version = "0.0.3"
     widgets_version = "0.0.1"
-    recyclerview_version = "0.9.4"
+    recyclerview_version = "0.9.5.snapshot.1"
     wt_common = "com.worktile:common:$common_version" as GStringImpl
     wt_widgets = "com.worktile.ui:widgets:$widgets_version" as GStringImpl
     wt_recyclerview = "com.worktile.ui:recyclerview:$recyclerview_version" as GStringImpl
