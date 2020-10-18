@@ -5,6 +5,7 @@ import com.worktile.common.arch.viewmodel.Default
 import com.worktile.ui.recyclerview.ItemDefinition
 import com.worktile.ui.recyclerview.EdgeState
 import com.worktile.ui.recyclerview.LoadingState
+import com.worktile.ui.recyclerview.binder.BinderCache
 import com.worktile.ui.recyclerview.viewmodels.data.EdgeStatePair
 
 interface RecyclerViewViewModel {
@@ -14,6 +15,7 @@ interface RecyclerViewViewModel {
     val onLoadFailedRetry: (() -> Unit)?
     val onLoadMore: (() -> Unit)?
     val onLoadMoreRetry: (() -> Unit)?
+    val binderCache: BinderCache
 
     companion object {
         @Default
@@ -24,6 +26,8 @@ interface RecyclerViewViewModel {
             override val onLoadFailedRetry: (() -> Unit)? = null
             override val onLoadMore: (() -> Unit)? = null
             override val onLoadMoreRetry: (() -> Unit)? = null
+            override val binderCache = BinderCache()
         }
     }
+
 }

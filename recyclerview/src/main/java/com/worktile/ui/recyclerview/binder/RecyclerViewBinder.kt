@@ -3,53 +3,25 @@ package com.worktile.ui.recyclerview.binder
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.*
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.worktile.common.arch.livedata.lazyObserve
 import com.worktile.ui.recyclerview.*
-import com.worktile.common.arch.livedata.LazyObserver
+import com.worktile.ui.recyclerview.R
 import com.worktile.ui.recyclerview.utils.livedata.set
 import com.worktile.ui.recyclerview.viewmodels.LoadingStateItemViewModel
 import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
+import com.worktile.ui.recyclerview.viewmodels.data.EdgeStatePair
 import kotlinx.android.synthetic.main.item_empty.view.*
 
-fun RecyclerView.bind(
-    data: RecyclerViewViewModel,
+fun <T> RecyclerView.bind(
+    data: T,
     owner: LifecycleOwner,
     config: Config = Config()
-) {
-    fun isToEnd(): Boolean {
-        val lastChildView = layoutManager!!.getChildAt(layoutManager!!.childCount - 1) ?: return false
-        val lastChildPosition = IntArray(2)
-        lastChildView.getLocationInWindow(lastChildPosition)
-        val lastChildBottom = lastChildView.height + lastChildPosition[1]
-        val recyclerViewPosition = IntArray(2)
-        getLocationInWindow(recyclerViewPosition)
-        val recyclerBottom = height + recyclerViewPosition[1] - paddingBottom
-        val lastPosition = layoutManager!!.getPosition(lastChildView)
-        return lastChildBottom == recyclerBottom && lastPosition == layoutManager!!.itemCount - 1
-    }
-
-
-    val adapter: SimpleAdapter<ItemDefinition> = SimpleAdapter(data.recyclerViewData.value ?: mutableListOf(), owner)
-    owner.lifecycle.addObserver(adapter)
-    setAdapter(adapter)
-    layoutManager = LinearLayoutManager(this.context)
-
-    if (config.loadMoreOnFooter) {
-        addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-                super.onScrollStateChanged(recyclerView, newState)
-                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                    val isEnd: Boolean = isToEnd()
-                    if (isEnd && !adapter.isLoadingMore) {
-                        data.onLoadMore?.invoke()
-                    }
-                }
-            }
-        })
-    }
-
+) where T : RecyclerViewViewModel, T : ViewModel {
+    val adapter: SimpleAdapter<ItemDefinition> = SimpleAdapter(data.binderCache.adapterData ?: mutableListOf(), owner)
+    val updateCallback = { data.binderCache.adapterData = adapter.data }
     val loadingItemViewModel = object : LoadingStateItemViewModel(LoadingState.LOADING) {
         override fun viewCreator() = config.loadingViewCreator ?: { parent: ViewGroup ->
             LayoutInflater.from(parent.context).inflate(R.layout.item_loading, parent, false)
@@ -76,23 +48,36 @@ fun RecyclerView.bind(
         }
     }
 
-    data.loadingState.observe(owner) { state ->
-        if (state == LoadingState.INIT) return@observe
+    fun isToEnd(): Boolean {
+        val lastChildView = layoutManager!!.getChildAt(layoutManager!!.childCount - 1) ?: return false
+        val lastChildPosition = IntArray(2)
+        lastChildView.getLocationInWindow(lastChildPosition)
+        val lastChildBottom = lastChildView.height + lastChildPosition[1]
+        val recyclerViewPosition = IntArray(2)
+        getLocationInWindow(recyclerViewPosition)
+        val recyclerBottom = height + recyclerViewPosition[1] - paddingBottom
+        val lastPosition = layoutManager!!.getPosition(lastChildView)
+        return lastChildBottom == recyclerBottom && lastPosition == layoutManager!!.itemCount - 1
+    }
+
+    fun observeLoadingState(state: LoadingState) {
+        if (state == LoadingState.INIT) return
+        data.binderCache.latestUpdateType = UpdateType.LoadingState
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "loadingState changed: $state")
         }
         when (state) {
             LoadingState.LOADING -> {
-                adapter.updateData({ listOf(loadingItemViewModel) }, "LOADING")
+                adapter.updateData({ listOf(loadingItemViewModel) }, "LOADING", updateCallback)
             }
             LoadingState.EMPTY -> {
-                adapter.updateData({ listOf(emptyItemViewModel) }, "EMPTY")
+                adapter.updateData({ listOf(emptyItemViewModel) }, "EMPTY", updateCallback)
             }
             LoadingState.FAILED -> {
-                adapter.updateData({ listOf(failureItemViewModel) }, "FAILED")
+                adapter.updateData({ listOf(failureItemViewModel) }, "FAILED", updateCallback)
             }
             LoadingState.SUCCESS -> {
-                adapter.updateData({ emptyList() }, "SUCCESS")
+                adapter.updateData({ emptyList() }, "SUCCESS", updateCallback)
             }
             else -> {
             }
@@ -112,15 +97,17 @@ fun RecyclerView.bind(
                 }
             }
         }, "updateFooter") {
-            if (scrollToEnd) scrollToPosition((adapter.itemCount ?: 1) - 1)
+            updateCallback()
+            if (scrollToEnd) scrollToPosition(adapter.itemCount - 1)
         }
     }
 
-    data.edgeState.observe(owner) edge@ { statePair ->
-        if (!config.loadMoreOnFooter || statePair.state == EdgeState.INIT) return@edge
+    fun observeEdgeState(statePair: EdgeStatePair) {
+        if (!config.loadMoreOnFooter || statePair.state == EdgeState.INIT) return
+        data.binderCache.latestUpdateType = UpdateType.EdgeState
         when (statePair.state) {
             EdgeState.LOADING -> {
-                adapter.isLoadingMore = true
+                data.binderCache.isLoadingMore = true
                 updateFooterItemViewModel(
                     statePair.currentData,
                     EdgeItemViewModel(
@@ -133,7 +120,7 @@ fun RecyclerView.bind(
             }
 
             EdgeState.NO_MORE -> {
-                adapter.isLoadingMore = false
+                data.binderCache.isLoadingMore = false
                 updateFooterItemViewModel(
                     statePair.currentData,
                     EdgeItemViewModel(
@@ -164,7 +151,7 @@ fun RecyclerView.bind(
             }
 
             EdgeState.SUCCESS -> {
-                adapter.isLoadingMore = false
+                data.binderCache.isLoadingMore = false
                 updateFooterItemViewModel(statePair.currentData,null)
             }
 
@@ -172,18 +159,53 @@ fun RecyclerView.bind(
         }
     }
 
-    data.recyclerViewData.observe(owner, object : LazyObserver<MutableList<ItemDefinition>>() {
-        override fun onLazyChanged(value: MutableList<ItemDefinition>) {
-            if (BuildConfig.DEBUG) {
-                Log.d(TAG, "recyclerViewData changed")
-            }
-            val cloneDataList = mutableListOf<ItemDefinition>()
-            cloneDataList.addAll(value)
-            adapter.run {
-                updateData({ cloneDataList }, "dataNotifyChanged")
-            }
+    fun observeRecyclerViewData(list: MutableList<ItemDefinition>) {
+        data.binderCache.latestUpdateType = UpdateType.Data
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "recyclerViewData changed")
         }
-    })
+        val cloneDataList = mutableListOf<ItemDefinition>()
+        cloneDataList.addAll(list)
+        adapter.updateData({ cloneDataList }, "dataNotifyChanged") {
+            data.binderCache.adapterData = adapter.data
+        }
+    }
+
+    layoutManager = LinearLayoutManager(this.context)
+
+    if (config.loadMoreOnFooter) {
+        addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                super.onScrollStateChanged(recyclerView, newState)
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    val isEnd: Boolean = isToEnd()
+                    if (isEnd && !data.binderCache.isLoadingMore) {
+                        data.onLoadMore?.invoke()
+                    }
+                }
+            }
+        })
+    }
+
+    setAdapter(adapter)
+    data.binderCache.latestUpdateType?.run {
+        data.loadingState.lazyObserve(owner) { state -> observeLoadingState(state) }
+        data.edgeState.lazyObserve(owner) { statePair -> observeEdgeState(statePair) }
+    } ?: run {
+        data.loadingState.observe(owner) { state -> observeLoadingState(state) }
+        data.edgeState.observe(owner) { statePair -> observeEdgeState(statePair) }
+    }
+    data.recyclerViewData.lazyObserve(owner) { list -> observeRecyclerViewData(list) }
+
+    owner.lifecycle.run {
+        addObserver(adapter)
+    }
+}
+
+enum class UpdateType {
+    LoadingState,
+    EdgeState,
+    Data
 }
 
 internal open class EdgeItemViewModel(
@@ -205,4 +227,10 @@ class Config {
     var footerLoadingViewCreator: ViewCreator? = null
     var footerNoMoreViewCreator: ViewCreator? = null
     var footerFailureViewCreator: ViewCreator? = null
+}
+
+class BinderCache {
+    var adapterData: MutableList<ItemDefinition>? = null
+    var latestUpdateType: UpdateType? = null
+    var isLoadingMore = false
 }

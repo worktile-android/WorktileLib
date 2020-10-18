@@ -20,7 +20,6 @@ class SimpleAdapter<T>(
     private val adapterTypeToViewCreatorMap = hashMapOf<Int, ViewCreator>()
     private var typeIndex = 0
     private var contentSparseArray = SparseArray<Array<ContentItem<*>>?>()
-    var isLoadingMore: Boolean = false
     private val diffThreadExecutor = Executors.newSingleThreadExecutor()
 
     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
