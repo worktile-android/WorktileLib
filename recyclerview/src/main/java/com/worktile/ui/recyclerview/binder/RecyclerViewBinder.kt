@@ -6,10 +6,9 @@ import android.view.ViewGroup
 import androidx.lifecycle.*
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.worktile.common.arch.livedata.lazyObserve
 import com.worktile.ui.recyclerview.*
 import com.worktile.ui.recyclerview.R
-import com.worktile.ui.recyclerview.utils.livedata.set
+import com.worktile.ui.recyclerview.utils.livedata.lazy.set
 import com.worktile.ui.recyclerview.viewmodels.LoadingStateItemViewModel
 import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
 import com.worktile.ui.recyclerview.viewmodels.data.EdgeStatePair
@@ -40,7 +39,7 @@ fun <T> RecyclerView.bind(
                 empty_hint.text = parent.context.getString(R.string.retry_hint)
                 if (data.onLoadFailedRetry != null) {
                     setOnClickListener {
-                        data.loadingState.value = LoadingState.LOADING
+                        data.loadingState set LoadingState.LOADING
                         data.onLoadFailedRetry?.invoke()
                     }
                 }
@@ -49,6 +48,13 @@ fun <T> RecyclerView.bind(
     }
 
     fun isToEnd(): Boolean {
+        if (adapter.data.size == 1) {
+            adapter.data[0].run {
+                if (this == loadingItemViewModel || this == emptyItemViewModel || this == failureItemViewModel) {
+                    return false
+                }
+            }
+        }
         val lastChildView = layoutManager!!.getChildAt(layoutManager!!.childCount - 1) ?: return false
         val lastChildPosition = IntArray(2)
         lastChildView.getLocationInWindow(lastChildPosition)
@@ -188,14 +194,9 @@ fun <T> RecyclerView.bind(
     }
 
     setAdapter(adapter)
-    data.binderCache.latestUpdateType?.run {
-        data.loadingState.lazyObserve(owner) { state -> observeLoadingState(state) }
-        data.edgeState.lazyObserve(owner) { statePair -> observeEdgeState(statePair) }
-    } ?: run {
-        data.loadingState.observe(owner) { state -> observeLoadingState(state) }
-        data.edgeState.observe(owner) { statePair -> observeEdgeState(statePair) }
-    }
-    data.recyclerViewData.lazyObserve(owner) { list -> observeRecyclerViewData(list) }
+    data.loadingState.observe(owner) { state -> observeLoadingState(state) }
+    data.edgeState.observe(owner) { statePair -> observeEdgeState(statePair) }
+    data.recyclerViewData.observe(owner) { list -> observeRecyclerViewData(list) }
 
     owner.lifecycle.run {
         addObserver(adapter)

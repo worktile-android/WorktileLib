@@ -10,7 +10,7 @@ import java.util.*
 interface ItemBinder {
     fun viewCreator(): ViewCreator
     fun bind(itemView: View)
-    fun type(): Any
+    fun type(): Any = this::class
 }
 
 interface ItemViewModel : BaseViewModel {

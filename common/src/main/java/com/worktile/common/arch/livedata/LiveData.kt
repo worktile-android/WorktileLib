@@ -12,10 +12,6 @@ import androidx.lifecycle.MutableLiveData
  * Desc:
  */
 
-fun <T> MutableLiveData<MutableList<T>>.notifyChanged() {
-    postValue(value)
-}
-
 fun <T> MutableLiveData<T>.lazyObserve(owner: LifecycleOwner, block: (value: T) ->Unit) {
     observe(owner, object : LazyObserver<T>() {
         override fun onLazyChanged(value: T) {

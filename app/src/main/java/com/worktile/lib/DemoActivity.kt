@@ -10,13 +10,14 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.lifecycle.ViewModel
-import com.worktile.common.arch.livedata.notifyChanged
 import com.worktile.common.arch.viewmodel.default
 import com.worktile.ui.recyclerview.ItemDefinition
 import com.worktile.ui.recyclerview.DiffItemViewModel
 import com.worktile.ui.recyclerview.LoadingState
 import com.worktile.ui.recyclerview.binder.bind
 import com.worktile.ui.recyclerview.decoration.LineDecoration
+import com.worktile.ui.recyclerview.utils.livedata.lazy.notifyChanged
+import com.worktile.ui.recyclerview.utils.livedata.lazy.set
 import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
 import kotlinx.android.synthetic.main.activity_demo.*
 import kotlinx.android.synthetic.main.item_category_item.view.*
@@ -47,11 +48,11 @@ class DemoViewModel : ViewModel(), RecyclerViewViewModel by default() {
     )
 
     init {
-        loadingState.postValue(LoadingState.LOADING)
+        loadingState set LoadingState.LOADING
 
         GlobalScope.launch {
             delay(3000)
-            loadingState.postValue(LoadingState.SUCCESS)
+            loadingState set LoadingState.SUCCESS
             recyclerViewData.value?.run {
                 for (item in 0..30) {
                     when (item) {
