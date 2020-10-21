@@ -13,8 +13,8 @@ import com.worktile.common.arch.viewmodel.default
 import com.worktile.ui.recyclerview.*
 import com.worktile.ui.recyclerview.binder.bind
 import com.worktile.ui.recyclerview.LoadingState
-import com.worktile.ui.recyclerview.utils.livedata.lazy.notifyChanged
-import com.worktile.ui.recyclerview.utils.livedata.lazy.set
+import com.worktile.ui.recyclerview.utils.livedata.extension.notifyChanged
+import com.worktile.ui.recyclerview.utils.livedata.extension.set
 import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*

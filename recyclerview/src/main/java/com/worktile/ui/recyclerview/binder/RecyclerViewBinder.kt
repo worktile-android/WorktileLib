@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.worktile.ui.recyclerview.*
 import com.worktile.ui.recyclerview.R
-import com.worktile.ui.recyclerview.utils.livedata.lazy.set
+import com.worktile.ui.recyclerview.utils.livedata.extension.set
 import com.worktile.ui.recyclerview.viewmodels.LoadingStateItemViewModel
 import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
 import com.worktile.ui.recyclerview.viewmodels.data.EdgeStatePair
@@ -173,7 +173,7 @@ fun <T> RecyclerView.bind(
         val cloneDataList = mutableListOf<ItemDefinition>()
         cloneDataList.addAll(list)
         adapter.updateData({ cloneDataList }, "dataNotifyChanged") {
-            data.binderCache.adapterData = adapter.data
+            updateCallback()
         }
     }
 
@@ -196,7 +196,11 @@ fun <T> RecyclerView.bind(
     setAdapter(adapter)
     data.loadingState.observe(owner) { state -> observeLoadingState(state) }
     data.edgeState.observe(owner) { statePair -> observeEdgeState(statePair) }
-    data.recyclerViewData.observe(owner) { list -> observeRecyclerViewData(list) }
+    data.recyclerViewData.observe(owner) { list ->
+        if (data.recyclerViewData.active) {
+            observeRecyclerViewData(list)
+        }
+    }
 
     owner.lifecycle.run {
         addObserver(adapter)

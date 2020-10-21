@@ -47,9 +47,9 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
     debugApi project(path: ':common')
-    debugApi project(path: ':widgets')
+    debugImplementation project(path: ':widgets')
     releaseApi wt_common
-    releaseApi wt_widgets
+    releaseImplementation wt_widgets
 }
 
 configPublish.call(project, 'com.worktile.ui', 'recyclerview', recyclerview_version)

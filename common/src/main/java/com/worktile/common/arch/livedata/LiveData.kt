@@ -1,7 +1,7 @@
 package com.worktile.common.arch.livedata
 
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.LiveData
 
 /**
  * Created by Android Studio.
@@ -12,7 +12,7 @@ import androidx.lifecycle.MutableLiveData
  * Desc:
  */
 
-fun <T> MutableLiveData<T>.lazyObserve(owner: LifecycleOwner, block: (value: T) ->Unit) {
+fun <T> LiveData<T>.lazyObserve(owner: LifecycleOwner, block: (value: T) ->Unit) {
     observe(owner, object : LazyObserver<T>() {
         override fun onLazyChanged(value: T) {
             block.invoke(value)

@@ -1,15 +1,17 @@
-package com.worktile.ui.recyclerview.utils.livedata.lazy
+package com.worktile.ui.recyclerview.utils.livedata.extension
 
 import android.os.Looper
 import com.worktile.ui.recyclerview.EdgeState
 import com.worktile.ui.recyclerview.ItemDefinition
 import com.worktile.ui.recyclerview.LoadingState
-import com.worktile.ui.recyclerview.utils.livedata.LazyLiveData
+import com.worktile.ui.recyclerview.utils.livedata.LazyActiveLiveData
+import com.worktile.ui.recyclerview.utils.livedata.RecordableLiveData
 import com.worktile.ui.recyclerview.viewmodels.data.EdgeStatePair
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
-fun <T> LazyLiveData<MutableList<T>>.notifyChanged() {
+fun <T> LazyActiveLiveData<MutableList<T>>.notifyChanged() {
+    active = true
     if (Thread.currentThread().id == Looper.getMainLooper().thread.id) {
         internalSet(value)
     } else {
@@ -17,7 +19,7 @@ fun <T> LazyLiveData<MutableList<T>>.notifyChanged() {
     }
 }
 
-infix fun LazyLiveData<EdgeStatePair>.set(state: EdgeState) {
+infix fun RecordableLiveData<EdgeStatePair>.set(state: EdgeState) {
     val currentValue = value ?: return
     GlobalScope.launch {
         internalPost(EdgeStatePair(state, currentValue.viewModel, mutableListOf<ItemDefinition>().apply {
@@ -26,7 +28,7 @@ infix fun LazyLiveData<EdgeStatePair>.set(state: EdgeState) {
     }
 }
 
-infix fun LazyLiveData<LoadingState>.set(state: LoadingState) {
+infix fun RecordableLiveData<LoadingState>.set(state: LoadingState) {
     if (Thread.currentThread().id == Looper.getMainLooper().thread.id) {
         internalSet(state)
     } else {

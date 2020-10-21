@@ -28,6 +28,7 @@ allprojects {
         maven { url 'https://maven.mokimatrix.com/repository/jcenter-proxy' }
         maven { url 'https://maven.mokimatrix.com/repository/maven-central' }
         maven { url 'https://maven.mokimatrix.com/repository/worktile' }
+        maven { url 'https://maven.mokimatrix.com/repository/debug' }
         maven { url 'https://maven.mokimatrix.com/repository/google-proxy' }
         google()
         jcenter()
