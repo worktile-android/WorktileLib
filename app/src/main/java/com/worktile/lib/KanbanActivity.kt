@@ -6,6 +6,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.viewpager2.adapter.FragmentStateAdapter
@@ -14,7 +15,7 @@ import com.worktile.ui.recyclerview.ItemDefinition
 import com.worktile.ui.recyclerview.DiffItemViewModel
 import com.worktile.ui.recyclerview.ViewCreator
 import com.worktile.ui.recyclerview.binder.bind
-import com.worktile.ui.recyclerview.utils.livedata.extension.notifyChanged
+import com.worktile.ui.recyclerview.livedata.extension.notifyChanged
 import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
 import kotlinx.android.synthetic.main.fragment_kanban_page.*
 

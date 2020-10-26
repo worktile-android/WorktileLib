@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -13,8 +14,8 @@ import com.worktile.common.arch.viewmodel.default
 import com.worktile.ui.recyclerview.*
 import com.worktile.ui.recyclerview.binder.bind
 import com.worktile.ui.recyclerview.LoadingState
-import com.worktile.ui.recyclerview.utils.livedata.extension.notifyChanged
-import com.worktile.ui.recyclerview.utils.livedata.extension.set
+import com.worktile.ui.recyclerview.livedata.extension.notifyChanged
+import com.worktile.ui.recyclerview.livedata.extension.set
 import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
@@ -63,6 +64,7 @@ class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
     init {
         recyclerViewData.value?.add(object : Test2ItemViewModel {
             override var title = "0000000"
+            override val list = emptyList<String>()
             override fun key() = "1111111"
         })
 
@@ -136,6 +138,7 @@ class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
             originData.forEach {
                 recyclerViewData.value?.add(object : Test2ItemViewModel {
                     private val key = UUID.randomUUID()
+                    override val list = emptyList<String>()
                     override var title = it
                     override fun key() = key
                 })
@@ -166,6 +169,7 @@ interface TestItemViewModel : DiffLiveDataItemViewModel, ItemDefinition {
 
 interface Test2ItemViewModel : DiffItemViewModel, ItemDefinition {
     var title: String
+    val list: List<String>
 
     override fun viewCreator() = { parent: ViewGroup ->
         TextView(parent.context).apply {
@@ -179,4 +183,22 @@ interface Test2ItemViewModel : DiffItemViewModel, ItemDefinition {
     }
 
     override fun type(): Any = Test2ItemViewModel::class
+
+    override fun content(): Array<ContentItem<*>>? {
+        return arrayOf(
+            ContentItem(title),
+            ContentItem(list) { a, b ->
+                if (a.size == b.size) {
+                    a.forEachIndexed { index, s ->
+                        if (index >= b.size || b[index] != s) {
+                            return@ContentItem false
+                        }
+                    }
+                    return@ContentItem true
+                } else {
+                    return@ContentItem false
+                }
+            }
+        )
+    }
 }

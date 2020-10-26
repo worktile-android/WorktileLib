@@ -16,8 +16,8 @@ import com.worktile.ui.recyclerview.DiffItemViewModel
 import com.worktile.ui.recyclerview.LoadingState
 import com.worktile.ui.recyclerview.binder.bind
 import com.worktile.ui.recyclerview.decoration.LineDecoration
-import com.worktile.ui.recyclerview.utils.livedata.extension.notifyChanged
-import com.worktile.ui.recyclerview.utils.livedata.extension.set
+import com.worktile.ui.recyclerview.livedata.extension.notifyChanged
+import com.worktile.ui.recyclerview.livedata.extension.set
 import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
 import kotlinx.android.synthetic.main.activity_demo.*
 import kotlinx.android.synthetic.main.item_category_item.view.*

@@ -11,11 +11,3 @@ import androidx.lifecycle.LiveData
  * Time: 2:25 PM
  * Desc:
  */
-
-fun <T> LiveData<T>.lazyObserve(owner: LifecycleOwner, block: (value: T) ->Unit) {
-    observe(owner, object : LazyObserver<T>() {
-        override fun onLazyChanged(value: T) {
-            block.invoke(value)
-        }
-    })
-}
