@@ -28,7 +28,6 @@ infix fun EdgeStateUpdatableData.set(state: EdgeState) {
             withContext(Dispatchers.Default) {
                 (viewModel?.recyclerViewData?.value ?: emptyList()).also {
                     synchronized(it) {
-                        Log.e("common", "edge update")
                         update(EdgeStateData(
                             state,
                             mutableListOf<ItemDefinition>().apply {

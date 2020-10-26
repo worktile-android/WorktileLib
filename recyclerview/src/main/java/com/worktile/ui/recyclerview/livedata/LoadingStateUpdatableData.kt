@@ -55,25 +55,21 @@ class LoadingStateUpdatableData(
     override fun update(value: LoadingState) {
         when (value) {
             LoadingState.LOADING -> {
-                Log.e("common", "LoadingStateUpdatableData update loading loading")
                 defaultViewModel.adapterData.internalPostValue(
                     AdapterLiveDataValue(mutableListOf(loadingItemViewModel))
                 )
             }
             LoadingState.EMPTY -> {
-                Log.e("common", "LoadingStateUpdatableData update loading empty")
                 defaultViewModel.adapterData.internalPostValue(
                     AdapterLiveDataValue(mutableListOf(emptyItemViewModel))
                 )
             }
             LoadingState.FAILED -> {
-                Log.e("common", "LoadingStateUpdatableData update loading failed")
                 defaultViewModel.adapterData.internalPostValue(
                     AdapterLiveDataValue(mutableListOf(failureItemViewModel))
                 )
             }
             LoadingState.SUCCESS -> {
-                Log.e("common", "LoadingStateUpdatableData update loading success")
                 defaultViewModel.adapterData.internalPostValue(
                     AdapterLiveDataValue(mutableListOf())
                 )
