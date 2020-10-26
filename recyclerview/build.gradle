@@ -40,15 +40,16 @@ dependencies {
     implementation appcompact
     implementation core_ktx
     implementation constraintlayout
+    implementation lifecycle_runtime_ktx
     api recyclerview
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
     debugApi project(path: ':common')
-    debugApi project(path: ':widgets')
-    releaseApi 'com.worktile:common:0.0.1'
-    releaseApi 'com.worktile.ui:widgets:0.0.1'
+    debugImplementation project(path: ':widgets')
+    releaseApi wt_common
+    releaseImplementation wt_widgets
 }
 
-configPublish.call(project, 'com.worktile.ui', 'recyclerview', '0.9.1')
+configPublish.call(project, 'com.worktile.ui', 'recyclerview', recyclerview_version)

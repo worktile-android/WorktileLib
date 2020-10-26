@@ -7,8 +7,8 @@ class TestOp {
     var value1 = 2
     var value2: List<Any> = emptyList()
     var value3: Int? = null
-    var value4: User? = null
-    var value5: List<User> = emptyList()
+    var value4: People? = null
+    var value5: List<People> = emptyList()
 
     @Deserializer
     fun test() {
@@ -21,7 +21,7 @@ class TestOp {
 
                 }
             }
-            "user" <User> {
+            "user" <People> {
                 "name" > it::name
             } > ::value4
             "bbb" > ::value5

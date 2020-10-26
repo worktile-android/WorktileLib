@@ -1,6 +1,7 @@
 package com.worktile.common.arch.livedata
 
-import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LiveData
 
 /**
  * Created by Android Studio.
@@ -10,7 +11,3 @@ import androidx.lifecycle.MutableLiveData
  * Time: 2:25 PM
  * Desc:
  */
-
-fun <T> MutableLiveData<MutableList<T>>.notifyChanged() {
-    postValue(value)
-}

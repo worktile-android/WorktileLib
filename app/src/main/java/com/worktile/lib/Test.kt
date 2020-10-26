@@ -1,6 +1,7 @@
 package com.worktile.lib
 
 import com.worktile.json.annotation.Deserializer
+import com.worktile.json.annotation.SerializedName
 import com.worktile.json.operator.parse
 
 /**
@@ -18,7 +19,8 @@ import com.worktile.json.operator.parse
 
 class Entry {
 
-    var name: Int? = null
+    @SerializedName("name")
+    var nameA: String? = null
 
     var age: Int? = null
 
@@ -30,14 +32,36 @@ class Entry {
 
     var address: String? = null
 
+    var child: Entry? = null
+
+    var peoples: List<People>? = null
+
+    var children: List<ChildEntry>? = null
+
     @Deserializer
     fun toJson() {
         parse {
-            "name" > ::name
+            "name" > ::nameA
             "age" > ::age
             "weight" > ::weight
             "height" > ::height
             "sex" > ::sex
+            "address" > ::address
+            "child" > ::child
+            "children" > ::children
+        }
+    }
+}
+
+class ChildEntry {
+    var name: String? = null
+
+    var address: String? = null
+
+    @Deserializer
+    fun parser() {
+        parse {
+            "name" > ::name
             "address" > ::address
         }
     }

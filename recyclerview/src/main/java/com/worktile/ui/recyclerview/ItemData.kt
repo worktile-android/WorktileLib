@@ -2,7 +2,6 @@ package com.worktile.ui.recyclerview
 
 import android.view.View
 import androidx.lifecycle.LiveData
-import com.worktile.common.arch.viewmodel.BaseViewModel
 import com.worktile.common.arch.viewmodel.Default
 import java.lang.reflect.Field
 import java.util.*
@@ -10,10 +9,10 @@ import java.util.*
 interface ItemBinder {
     fun viewCreator(): ViewCreator
     fun bind(itemView: View)
-    fun type(): Any
+    fun type(): Any = this::class
 }
 
-interface ItemViewModel : BaseViewModel {
+interface ItemViewModel {
     fun key(): Any
     fun content(): Array<ContentItem<*>>?
 }
@@ -77,5 +76,5 @@ private fun getAllFields(obj: Any): List<Field> {
     return fields
 }
 
-interface Definition : ItemViewModel, ItemBinder
+interface ItemDefinition : ItemViewModel, ItemBinder
 
