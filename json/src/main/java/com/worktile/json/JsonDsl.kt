@@ -10,7 +10,7 @@ import java.lang.reflect.ParameterizedType
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
-class JsonDsl {
+class JsonDsl(private val deserialize: Boolean = true) {
     companion object {
         const val TAG = "JsonDsl"
         internal val jsonMap = ConcurrentHashMap<Any/*object need to be filled*/, ParserData>()
@@ -19,7 +19,9 @@ class JsonDsl {
     fun parse(jsonObject: JSONObject, kClass: KClass<*>): Any {
         return kClass.java.newInstance().apply {
             jsonMap[this] = ParserData(this@JsonDsl, jsonObject)
-            autoDeserializeJson(kClass, jsonObject)
+            if (deserialize) {
+                deserialize(this, kClass, jsonObject)
+            }
             var found = false
             kClass.java.methods.forEach methods@{ method ->
                 method.annotations.forEach {
@@ -45,7 +47,8 @@ class JsonDsl {
         return parse(JSONObject(json), T::class) as T
     }
 
-    private fun autoDeserializeJson(
+    private fun deserialize(
+        context: Any,
         kClass: KClass<*>,
         jsonObject: JSONObject
     ) {
@@ -57,7 +60,7 @@ class JsonDsl {
             jsonObject.opt(jsonFieldName)?.let {
                 when (it) {
                     is JSONObject -> {
-                        field.set(this, JsonDsl().parse(it, field.type.kotlin))
+                        field.set(context, JsonDsl(deserialize).parse(it, field.type.kotlin))
                     }
                     is JSONArray -> {
                         val arrayObj = mutableListOf<Any>()
@@ -65,15 +68,15 @@ class JsonDsl {
                             val arrayGenericType =
                                 ((field.genericType as ParameterizedType).actualTypeArguments[0] as Class<*>)
                             arrayObj.add(
-                                JsonDsl().parse(
+                                JsonDsl(deserialize).parse(
                                     it.getJSONObject(index),
                                     arrayGenericType.kotlin
                                 )
                             )
                         }
-                        field.set(this, arrayObj)
+                        field.set(context, arrayObj)
                     }
-                    is String -> field.set(this, it)
+                    is String -> field.set(context, it)
                     is Number -> {
                         val numberValue = when (field.type) {
                             Int::class.javaObjectType -> it.toInt()
@@ -88,9 +91,9 @@ class JsonDsl {
                                 0
                             }
                         }
-                        field.set(this, numberValue)
+                        field.set(context, numberValue)
                     }
-                    is Boolean -> field.set(this, it)
+                    is Boolean -> field.set(context, it)
                     JSONObject.NULL -> {
                     }
                     else -> {

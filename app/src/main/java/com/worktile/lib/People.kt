@@ -1,5 +1,7 @@
 package com.worktile.lib
 
+import com.worktile.json.annotation.Ignore
+
 /**
  * Created by Android Studio.
  * User: HuBo
@@ -10,4 +12,7 @@ package com.worktile.lib
  */
 class People {
     var name: String? = null
+
+    @Ignore
+    var address: String? = null
 }

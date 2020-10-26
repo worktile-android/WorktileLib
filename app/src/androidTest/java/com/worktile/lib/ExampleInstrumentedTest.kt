@@ -1,7 +1,6 @@
 package com.worktile.lib
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
 import com.worktile.json.JsonDsl
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -14,38 +13,42 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class ExampleInstrumentedTest {
-    @Test
-    fun useAppContext() {
-        // Context of the app under test.
-        val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.worktile.lib", appContext.packageName)
-    }
 
     @Test
     fun jsonParse() {
-
         val entry =
-            JsonDsl().parse<Entry>("{\"name\":\"xixi\",\"age\":1,\"weight\":99.9,\"height\":101010101,\"sex\":true,\"address\":null,\"child\":{\"name\":\"xixi\",\"age\":1,\"weight\":99.9,\"height\":101010101,\"sex\":true,\"address\":null},\"children\":[{\"name\":\"呆\"}]}")
+            JsonDsl().parse<Entry>("{\"name\":\"xixi\",\"age\":1,\"weight\":99.9,\"height\":101010101,\"sex\":true,\"address\":null,\"child\":{\"name\":\"xixi\",\"age\":1,\"weight\":99.9,\"height\":101010101,\"sex\":true,\"address\":null},\"peoples\":[{\"name\":\"呆\"}]}")
         assertEquals("xixi", entry.nameA)
-    }
-
-    @Test
-    fun parseObject() {
-        val entry =
-            JsonDsl().parse<Entry>("{\"name\":\"xixi\",\"age\":1,\"weight\":99.9,\"height\":101010101,\"sex\":true,\"address\":null,\"child\":{\"name\":\"xixi\",\"age\":1,\"weight\":99.9,\"height\":101010101,\"sex\":true,\"address\":null}}")
+        assertEquals(1, entry.age)
+        assertEquals(99.9, entry.weight)
+        assertEquals(101010101L, entry.height)
+        assertEquals(true, entry.sex)
+        assertEquals(null, entry.address)
         assertEquals("xixi", entry.child?.nameA)
+        assertEquals("呆", entry.peoples?.get(0)?.name)
     }
 
     @Test
-    fun checkSerializedOpt() {
-        val entry = JsonDsl().parse<Entry>("{\"name\":\"xixi\"}")
+    fun checkoutDeserializer() {
+        val entry =
+            JsonDsl(false).parse<Entry>("{\"name\":\"xixi\",\"age\":1,\"weight\":99.9,\"height\":101010101,\"sex\":true,\"address\":null,\"child\":{\"name\":\"xixi\",\"age\":1,\"weight\":99.9,\"height\":101010101,\"sex\":true,\"address\":null},\"children\":[{\"name\":\"呆\"}]}")
         assertEquals("xixi", entry.nameA)
+        assertEquals(1, entry.age)
+        assertEquals(99.9, entry.weight)
+        assertEquals(101010101L, entry.height)
+        assertEquals(true, entry.sex)
+        assertEquals(null, entry.address)
+        assertEquals("xixi", entry.child?.nameA)
+        assertEquals("呆", entry.children?.get(0)?.name)
     }
 
     @Test
     fun checkIgnoreOpt() {
         val entry =
-            JsonDsl().parse<Entry>("{\"name\":\"xixi\",\"age\":1,\"weight\":99.9,\"height\":101010101,\"sex\":true,\"address\":null}")
-        assertEquals("xixi", entry.age)
+            JsonDsl().parse<People>("{\"name\":\"xixi\",\"address\":\"Beijing\"}")
+        assertEquals("xixi", entry.name)
+        assertEquals(null, entry.address)
     }
+
+
 }
