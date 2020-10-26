@@ -1,34 +1,34 @@
 package com.worktile.ui.recyclerview.viewmodels
 
-import androidx.lifecycle.MutableLiveData
 import com.worktile.common.arch.viewmodel.Default
-import com.worktile.ui.recyclerview.Definition
 import com.worktile.ui.recyclerview.EdgeState
 import com.worktile.ui.recyclerview.LoadingState
+import com.worktile.ui.recyclerview.livedata.*
+import com.worktile.ui.recyclerview.viewmodels.data.EdgeStateData
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 interface RecyclerViewViewModel {
-    val recyclerViewData: MutableLiveData<MutableList<Definition>>
-    val loadingState: MutableLiveData<LoadingState>
-    val edgeState: MutableLiveData<EdgeStatePair>
+    val recyclerViewData: ContentUpdatableData
+    val loadingState: LoadingStateUpdatableData
+    val edgeState: EdgeStateUpdatableData
     val onLoadFailedRetry: (() -> Unit)?
     val onLoadMore: (() -> Unit)?
     val onLoadMoreRetry: (() -> Unit)?
 
+    val adapterData: AdapterLiveData
+
     companion object {
         @Default
         fun default() = object : RecyclerViewViewModel {
-            override val recyclerViewData = MutableLiveData<MutableList<Definition>>(mutableListOf())
-            override val loadingState = MutableLiveData(LoadingState.INIT)
-            override val edgeState = MutableLiveData(EdgeStatePair(EdgeState.INIT, this, recyclerViewData.value ?: mutableListOf()))
+            override val recyclerViewData = ContentUpdatableData(this)
+            override val loadingState = LoadingStateUpdatableData(this)
+            override val edgeState = EdgeStateUpdatableData(this)
             override val onLoadFailedRetry: (() -> Unit)? = null
             override val onLoadMore: (() -> Unit)? = null
             override val onLoadMoreRetry: (() -> Unit)? = null
+            override val adapterData = AdapterLiveData(AdapterLiveDataValue(listOf()))
         }
     }
-}
 
-data class EdgeStatePair(
-    val state: EdgeState,
-    val viewModel: RecyclerViewViewModel,
-    val currentData: MutableList<Definition>
-)
+}

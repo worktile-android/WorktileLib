@@ -1,9 +1,8 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
-apply plugin: 'maven-publish'
 
-// com.worktile.ui:widgets:version
+// com.worktile.ui:kanban:version
 
 android {
     compileSdkVersion 29
@@ -32,12 +31,9 @@ dependencies {
     implementation kotlin_stdlib_jdk7
     implementation core_ktx
     implementation appcompact
+    implementation viewpager2
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
-    debugApi project(path: ':common')
-    releaseApi wt_common
 }
-
-configPublish.call(project, 'com.worktile.ui', 'widgets', widgets_version)

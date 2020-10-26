@@ -11,14 +11,20 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.lifecycle.ViewModel
 import com.worktile.common.arch.viewmodel.default
-import com.worktile.ui.recyclerview.Definition
+import com.worktile.ui.recyclerview.ItemDefinition
 import com.worktile.ui.recyclerview.DiffItemViewModel
+import com.worktile.ui.recyclerview.LoadingState
 import com.worktile.ui.recyclerview.binder.bind
 import com.worktile.ui.recyclerview.decoration.LineDecoration
+import com.worktile.ui.recyclerview.livedata.extension.notifyChanged
+import com.worktile.ui.recyclerview.livedata.extension.set
 import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
 import kotlinx.android.synthetic.main.activity_demo.*
 import kotlinx.android.synthetic.main.item_category_item.view.*
 import kotlinx.android.synthetic.main.item_project_item.view.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 class DemoActivity : AppCompatActivity() {
@@ -42,41 +48,48 @@ class DemoViewModel : ViewModel(), RecyclerViewViewModel by default() {
     )
 
     init {
-        recyclerViewData.value?.run {
-            for (item in 0..30) {
-                when (item) {
-                    0 -> add(CategoryItemViewModel(item, "工作"))
-                    1 -> add(ProjectItemViewModel(item, "统计报表", R.mipmap.icon_statistic_data))
-                    2 -> add(ProjectItemViewModel(item, "人员视图", R.mipmap.icon_work_member))
-                    3 -> add(
-                        ProjectItemViewModel(
-                            item,
-                            "我的任务",
-                            R.mipmap.icon_project_main_my_tasks
-                        )
-                    )
-                    4 -> add(CategoryItemViewModel(item, "置顶"))
-                    9 -> add(CategoryItemViewModel(item, "项目"))
-                    else -> {
-                        val randomIndex = Random.nextInt(4)
-                        val randomSrcIndex = Random.nextInt(2)
-                        add(
+        loadingState set LoadingState.LOADING
+
+        GlobalScope.launch {
+            delay(3000)
+            loadingState set LoadingState.SUCCESS
+            recyclerViewData.value?.run {
+                for (item in 0..30) {
+                    when (item) {
+                        0 -> add(CategoryItemViewModel(item, "工作"))
+                        1 -> add(ProjectItemViewModel(item, "统计报表", R.mipmap.icon_statistic_data))
+                        2 -> add(ProjectItemViewModel(item, "人员视图", R.mipmap.icon_work_member))
+                        3 -> add(
                             ProjectItemViewModel(
                                 item,
-                                projectTitles[randomIndex],
-                                srcList[randomSrcIndex],
-                                colorList[randomIndex]
+                                "我的任务",
+                                R.mipmap.icon_project_main_my_tasks
                             )
                         )
+                        4 -> add(CategoryItemViewModel(item, "置顶"))
+                        9 -> add(CategoryItemViewModel(item, "项目"))
+                        else -> {
+                            val randomIndex = Random.nextInt(4)
+                            val randomSrcIndex = Random.nextInt(2)
+                            add(
+                                ProjectItemViewModel(
+                                    item,
+                                    projectTitles[randomIndex],
+                                    srcList[randomSrcIndex],
+                                    colorList[randomIndex]
+                                )
+                            )
+                        }
                     }
                 }
             }
+            recyclerViewData.notifyChanged()
         }
     }
 
     class CategoryItemViewModel(private val key: Int, private val title: String) :
         DiffItemViewModel,
-        Definition {
+        ItemDefinition {
 
         override fun key() = key
 
@@ -97,7 +110,7 @@ class DemoViewModel : ViewModel(), RecyclerViewViewModel by default() {
         private val src: Int,
         private val color: String? = null
     ) : DiffItemViewModel,
-        Definition {
+        ItemDefinition {
         override fun key() = key
 
         override fun viewCreator() = { parent: ViewGroup ->
