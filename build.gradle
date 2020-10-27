@@ -40,8 +40,13 @@ task clean(type: Delete) {
     delete rootProject.buildDir
 }
 
-def configPublish(Project project, group, artifact, ver) {
+def configPublish(Project project, group, _artifact, ver) {
+
     project.afterEvaluate {
+        project.task([type: Jar], "sourceJar") {
+            from project.extensions["android"].sourceSets.main.java.srcDirs
+        }
+
         project.publishing {
             publications {
                 // Creates a Maven publication called "release".
@@ -49,9 +54,13 @@ def configPublish(Project project, group, artifact, ver) {
                     // Applies the component for the release build variant.
                     from project.components.release
 
+                    artifact project.sourceJar {
+                        classifier "sources"
+                    }
+
                     // You can then customize attributes of the publication as shown below.
                     groupId = group
-                    artifactId = artifact
+                    artifactId = _artifact
                     version = ver
                 }
 
@@ -59,9 +68,13 @@ def configPublish(Project project, group, artifact, ver) {
                     // Applies the component for the release build variant.
                     from project.components.debug
 
+                    artifact project.sourceJar {
+                        classifier "sources"
+                    }
+
                     // You can then customize attributes of the publication as shown below.
                     groupId = group
-                    artifactId = artifact
+                    artifactId = _artifact
                     version = ver
                 }
             }
