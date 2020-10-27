@@ -11,11 +11,9 @@ buildscript {
         maven { url 'https://maven.mokimatrix.com/repository/jcenter-proxy' }
         maven { url 'https://maven.mokimatrix.com/repository/maven-central' }
         maven { url 'https://maven.mokimatrix.com/repository/google-proxy' }
-        google()
-        jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.0.0'
+        classpath 'com.android.tools.build:gradle:4.0.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
 
         // NOTE: Do not place your application dependencies here; they belong
@@ -30,9 +28,6 @@ allprojects {
         maven { url 'https://maven.mokimatrix.com/repository/worktile' }
         maven { url 'https://maven.mokimatrix.com/repository/debug' }
         maven { url 'https://maven.mokimatrix.com/repository/google-proxy' }
-        google()
-        jcenter()
-
     }
 }
 
