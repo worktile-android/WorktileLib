@@ -8,11 +8,11 @@ import com.worktile.ui.recyclerview.*
 import com.worktile.ui.recyclerview.livedata.AdapterLiveDataValue
 import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
 
-fun RecyclerView.bind(
-    viewModel: RecyclerViewViewModel,
+fun <T> RecyclerView.bind(
+    viewModel: T,
     owner: LifecycleOwner,
     config: Config = Config()
-) {
+) where T : RecyclerViewViewModel, T : ViewModel {
     layoutManager = LinearLayoutManager(this.context)
     val adapter: SimpleAdapter<ItemDefinition> = SimpleAdapter(
         viewModel.adapterData.value?.items?.toMutableList() ?: mutableListOf(),
@@ -83,6 +83,10 @@ fun RecyclerView.bind(
 
     owner.lifecycle.run {
         addObserver(adapter)
+    }
+
+    viewModel.registerClearCallback {
+        println("$viewModel onClear")
     }
 }
 

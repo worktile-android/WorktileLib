@@ -130,9 +130,6 @@ class SimpleAdapter<T>(
                     data = newData.toMutableList()
                     diffResult.dispatchUpdatesTo(this@SimpleAdapter)
                     updateCallback?.invoke()
-                    if (BuildConfig.DEBUG) {
-                        Log.d(TAG, "updateUi, debugKey = $debugKey")
-                    }
                 }
             }
         }
