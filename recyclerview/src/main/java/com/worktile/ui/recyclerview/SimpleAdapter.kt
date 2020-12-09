@@ -5,8 +5,7 @@ import android.util.SparseArray
 import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.*
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.*
 import kotlinx.coroutines.*
 import java.util.concurrent.Executors
 
@@ -21,6 +20,7 @@ class SimpleAdapter<T>(
     private var typeIndex = 0
     private var contentSparseArray = SparseArray<Array<ContentItem<*>>?>()
     private val diffThreadExecutor = Executors.newSingleThreadExecutor()
+    private var recyclerView: RecyclerView? = null
 
     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
     fun onLifecycleOwnerDestroy() {
@@ -58,6 +58,11 @@ class SimpleAdapter<T>(
         return size
     }
 
+    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+        super.onAttachedToRecyclerView(recyclerView)
+        this.recyclerView = recyclerView
+    }
+
     fun updateData(prepareNewData: () -> List<T>, debugKey: String? = null, updateCallback: (() -> Unit)? = null) {
         diffThreadExecutor.execute {
             runBlocking {
@@ -77,7 +82,11 @@ class SimpleAdapter<T>(
                     }
 
                     override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                        val oldContent = contentSparseArray[oldItemPosition]
+                        val oldContent = contentSparseArray[oldItemPosition] ?: run {
+                            val content = oldData[oldItemPosition].content()
+                            contentSparseArray.put(oldItemPosition, content)
+                            content
+                        }
                         val newContent = newData[newItemPosition].content()
                         if (oldContent == null || newContent == null) {
                             return false
@@ -128,11 +137,36 @@ class SimpleAdapter<T>(
 
                 withContext(Dispatchers.Main) {
                     data = newData.toMutableList()
-                    diffResult.dispatchUpdatesTo(this@SimpleAdapter)
+                    diffResult.dispatchUpdatesTo(object : ListUpdateCallback {
+                        override fun onInserted(position: Int, count: Int) {
+                            this@SimpleAdapter.notifyItemRangeInserted(position, count)
+                        }
+
+                        override fun onRemoved(position: Int, count: Int) {
+                            this@SimpleAdapter.notifyItemRangeRemoved(position, count)
+                        }
+
+                        override fun onMoved(fromPosition: Int, toPosition: Int) {
+                            this@SimpleAdapter.notifyItemMoved(fromPosition, toPosition)
+                            val layoutManager = recyclerView?.layoutManager as? LinearLayoutManager
+                            if (layoutManager != null) {
+                                val firstPosition = layoutManager.findFirstVisibleItemPosition()
+                                if (fromPosition == firstPosition) {
+                                    recyclerView?.scrollToPosition(fromPosition)
+                                    return
+                                }
+                                if (toPosition <= firstPosition) {
+                                    recyclerView?.scrollToPosition(firstPosition)
+                                }
+                            }
+                        }
+
+                        override fun onChanged(position: Int, count: Int, payload: Any?) {
+                            this@SimpleAdapter.notifyItemRangeChanged(position, count, payload)
+                        }
+
+                    })
                     updateCallback?.invoke()
-                    if (BuildConfig.DEBUG) {
-                        Log.d(TAG, "updateUi, debugKey = $debugKey")
-                    }
                 }
             }
         }
