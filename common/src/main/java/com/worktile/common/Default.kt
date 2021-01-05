@@ -1,6 +1,6 @@
 @file:Suppress("IMPLICIT_CAST_TO_ANY")
 
-package com.worktile.common.arch.viewmodel
+package com.worktile.common
 
 import java.lang.Exception
 import kotlin.reflect.full.*

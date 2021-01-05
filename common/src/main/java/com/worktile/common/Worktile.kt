@@ -5,8 +5,8 @@ import android.app.Application
 import android.os.Bundle
 
 object Worktile {
-    val activityContext: Activity? get() = topActivity
-    val applicationContext: Application? get() = application
+    val activityContext: Activity get() = topActivity ?: throw Exception()
+    val applicationContext: Application get() = application ?: throw Exception()
 
     private var topActivity: Activity? = null
     private var application: Application? = null

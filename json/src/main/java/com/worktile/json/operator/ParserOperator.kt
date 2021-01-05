@@ -19,19 +19,19 @@ class ParserOperator(parserData: ParserData) : Parser(parserData) {
         block.invoke(this)
     }
 
-    inline infix operator fun <reified T> String.compareTo(property: KMutableProperty0<T>): Int {
+    infix operator fun <T> String.compareTo(property: KMutableProperty0<T>): Int {
         into(property)
         return 0
     }
 
-    inline operator fun <reified T> String.compareTo(attachResult: AttachResult<T>): Int {
+    operator fun <T> String.compareTo(attachResult: AttachResult<T>): Int {
         val intoResult = into(attachResult.property)
         intoResult.attach(attachResult.attach)
         return 0
     }
 
-    inline operator fun <reified T> KMutableProperty0<T>.invoke(
-        noinline block: Parser.(t: T?) -> Unit
+    operator fun <T> KMutableProperty0<T>.invoke(
+        block: Parser.(t: T?) -> Unit
     ): AttachResult<T> {
         return AttachResult(this, block)
     }
@@ -48,7 +48,7 @@ class ParserOperator(parserData: ParserData) : Parser(parserData) {
         return parse(block)
     }
 
-    inline operator fun <reified T> CustomParseResult<T>.compareTo(property: KMutableProperty0<in T>): Int {
+    operator fun <T> CustomParseResult<T>.compareTo(property: KMutableProperty0<in T>): Int {
         into(property)
         return 0
     }
@@ -57,12 +57,12 @@ class ParserOperator(parserData: ParserData) : Parser(parserData) {
         return alter(key)
     }
 
-    inline infix operator fun <reified T> ThenResult.compareTo(property: KMutableProperty0<T>): Int {
+    infix operator fun <T> ThenResult.compareTo(property: KMutableProperty0<T>): Int {
         into(property)
         return 0
     }
 
-    inline infix operator fun <reified T> ThenResult.compareTo(attachResult: AttachResult<T>): Int {
+    infix operator fun <T> ThenResult.compareTo(attachResult: AttachResult<T>): Int {
         into(attachResult.property).attach(attachResult.attach)
         return 0
     }
@@ -71,12 +71,12 @@ class ParserOperator(parserData: ParserData) : Parser(parserData) {
         return alter(key)
     }
 
-    inline infix operator fun <reified T> AlterResult.compareTo(property: KMutableProperty0<T>): Int {
+    infix operator fun <T> AlterResult.compareTo(property: KMutableProperty0<T>): Int {
         into(property)
         return 0
     }
 
-    inline infix operator fun <reified T> AlterResult.compareTo(attachResult: AttachResult<T>): Int {
+    infix operator fun <T> AlterResult.compareTo(attachResult: AttachResult<T>): Int {
         into(attachResult.property).attach(attachResult.attach)
         return 0
     }

@@ -10,7 +10,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.lifecycle.ViewModel
-import com.worktile.common.arch.viewmodel.default
+import com.worktile.common.default
 import com.worktile.ui.recyclerview.ItemDefinition
 import com.worktile.ui.recyclerview.DiffItemViewModel
 import com.worktile.ui.recyclerview.LoadingState
