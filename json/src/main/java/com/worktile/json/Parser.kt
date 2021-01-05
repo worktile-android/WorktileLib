@@ -8,6 +8,7 @@ import org.json.JSONObject
 import kotlin.reflect.KClass
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KMutableProperty0
+import kotlin.reflect.full.isSubclassOf
 
 const val TAG = "JsonDsl"
 
@@ -56,7 +57,7 @@ open class Parser(val data: ParserData) {
                     return IntoResult(result)
                 }
                 is JSONArray -> {
-                    if (List::class.java.isAssignableFrom(tkClass.java)) {
+                    if (tkClass.isSubclassOf(List::class)) {
                         val argumentType = property.returnType.arguments[0]
                         (argumentType.type?.classifier as? KClass<*>)?.apply {
                             val list = mutableListOf<Any>()
@@ -75,37 +76,44 @@ open class Parser(val data: ParserData) {
                     }
                 }
                 is Number -> {
-                    if (Number::class.java.isAssignableFrom(tkClass.java)) {
-                        val numberResult = when (tkClass) {
-                            Int::class -> value.toInt()
-                            Double::class -> value.toDouble()
-                            Long::class -> value.toLong()
-                            Float::class -> value.toFloat()
-                            Short::class -> value.toShort()
-                            Char::class -> value.toChar()
-                            Byte::class -> value.toByte()
-                            else -> 0
+                    when {
+                        tkClass.isSubclassOf(Number::class) -> {
+                            val numberResult = when (tkClass) {
+                                Int::class -> value.toInt()
+                                Double::class -> value.toDouble()
+                                Long::class -> value.toLong()
+                                Float::class -> value.toFloat()
+                                Short::class -> value.toShort()
+                                Char::class -> value.toChar()
+                                Byte::class -> value.toByte()
+                                else -> 0
+                            }
+                            property.set(numberResult as T)
+                            return IntoResult(numberResult)
                         }
-                        property.set(numberResult as T)
-                        return IntoResult(numberResult)
-                    } else {
-                        Log.w(TAG, "需要一个Number类型属性，但${value}不是")
+                        tkClass == Any::class -> {
+                            property.set(value as T)
+                            return IntoResult(value)
+                        }
+                        else -> {
+                            Log.w(TAG, "需要一个Number类型属性，但${property}不是")
+                        }
                     }
                 }
                 is String -> {
-                    if (String::class.java.isAssignableFrom(tkClass.java)) {
+                    if (String::class == tkClass || tkClass == Any::class) {
                         property.set(value as T)
                         return IntoResult(value)
                     } else {
-                        Log.w(TAG, "需要一个String类型属性，但${value}不是")
+                        Log.w(TAG, "需要一个String类型属性，但${property}不是")
                     }
                 }
                 is Boolean -> {
-                    if (Boolean::class == tkClass) {
+                    if (Boolean::class == tkClass || tkClass == Any::class) {
                         property.set(value as T)
                         return IntoResult(value)
                     } else {
-                        Log.w(TAG, "需要一个Boolean类型属性，但${value}不是")
+                        Log.w(TAG, "需要一个Boolean类型属性，但${property}不是")
                     }
                 }
                 JSONObject.NULL -> {
