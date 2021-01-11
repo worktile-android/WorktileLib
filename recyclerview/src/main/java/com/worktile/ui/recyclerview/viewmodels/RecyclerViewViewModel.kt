@@ -1,6 +1,6 @@
 package com.worktile.ui.recyclerview.viewmodels
 
-import com.worktile.common.arch.viewmodel.Default
+import com.worktile.common.Default
 import com.worktile.ui.recyclerview.EdgeState
 import com.worktile.ui.recyclerview.LoadingState
 import com.worktile.ui.recyclerview.livedata.*

@@ -1,10 +1,14 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package com.worktile.json
 
 import android.util.Log
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.reflect.KClass
+import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KMutableProperty0
+import kotlin.reflect.full.isSubclassOf
 
 const val TAG = "JsonDsl"
 
@@ -13,6 +17,10 @@ fun Any.parse(block: Parser.() -> Unit) {
     parserData?.run {
         block.invoke(Parser(parserData))
     } ?: throw Exception("没有找到json, $this")
+}
+
+private fun KMutableProperty<*>.actualClass(): KClass<*>? {
+    return returnType.classifier as? KClass<*>
 }
 
 open class Parser(val data: ParserData) {
@@ -35,17 +43,21 @@ open class Parser(val data: ParserData) {
         return IntoResult()
     }
 
-    inline infix fun <reified T> String.into(property: KMutableProperty0<T>): IntoResult<T?> {
+    infix fun <T> String.into(property: KMutableProperty0<T>): IntoResult<T?> {
+        val tkClass = property.actualClass() ?: run {
+            Log.w(TAG, "找不到属性${property.name}的类型")
+            return IntoResult()
+        }
         val value = data.jsonObject.opt(this)
         value?.run {
             when (value) {
                 is JSONObject -> {
-                    val result = data.jsonDsl.parse(value) as T
+                    val result = data.jsonDsl.parse(value, tkClass) as T
                     property.set(result)
                     return IntoResult(result)
                 }
                 is JSONArray -> {
-                    if (List::class.java.isAssignableFrom(T::class.java)) {
+                    if (tkClass.isSubclassOf(List::class)) {
                         val argumentType = property.returnType.arguments[0]
                         (argumentType.type?.classifier as? KClass<*>)?.apply {
                             val list = mutableListOf<Any>()
@@ -64,37 +76,44 @@ open class Parser(val data: ParserData) {
                     }
                 }
                 is Number -> {
-                    if (Number::class.java.isAssignableFrom(T::class.java)) {
-                        val numberResult = when (T::class) {
-                            Int::class -> value.toInt()
-                            Double::class -> value.toDouble()
-                            Long::class -> value.toLong()
-                            Float::class -> value.toFloat()
-                            Short::class -> value.toShort()
-                            Char::class -> value.toChar()
-                            Byte::class -> value.toByte()
-                            else -> 0
+                    when {
+                        tkClass.isSubclassOf(Number::class) -> {
+                            val numberResult = when (tkClass) {
+                                Int::class -> value.toInt()
+                                Double::class -> value.toDouble()
+                                Long::class -> value.toLong()
+                                Float::class -> value.toFloat()
+                                Short::class -> value.toShort()
+                                Char::class -> value.toChar()
+                                Byte::class -> value.toByte()
+                                else -> 0
+                            }
+                            property.set(numberResult as T)
+                            return IntoResult(numberResult)
                         }
-                        property.set(numberResult as T)
-                        return IntoResult(numberResult)
-                    } else {
-                        Log.w(TAG, "需要一个Number类型属性，但${value}不是")
+                        tkClass == Any::class -> {
+                            property.set(value as T)
+                            return IntoResult(value)
+                        }
+                        else -> {
+                            Log.w(TAG, "需要一个Number类型属性，但${property}不是")
+                        }
                     }
                 }
                 is String -> {
-                    if (String::class.java.isAssignableFrom(T::class.java)) {
+                    if (String::class == tkClass || tkClass == Any::class) {
                         property.set(value as T)
                         return IntoResult(value)
                     } else {
-                        Log.w(TAG, "需要一个String类型属性，但${value}不是")
+                        Log.w(TAG, "需要一个String类型属性，但${property}不是")
                     }
                 }
                 is Boolean -> {
-                    if (Boolean::class == T::class) {
+                    if (Boolean::class == tkClass || tkClass == Any::class) {
                         property.set(value as T)
                         return IntoResult(value)
                     } else {
-                        Log.w(TAG, "需要一个Boolean类型属性，但${value}不是")
+                        Log.w(TAG, "需要一个Boolean类型属性，但${property}不是")
                     }
                 }
                 JSONObject.NULL -> {
@@ -112,7 +131,7 @@ open class Parser(val data: ParserData) {
 
     inner class IntoResult<T>(val propertyValue: T? = null)
 
-    inline infix fun <reified T> IntoResult<T>.attach(block: Parser.(t: T?) -> Unit) {
+    infix fun <T> IntoResult<T>.attach(block: Parser.(t: T?) -> Unit) {
         block.invoke(this@Parser, this.propertyValue)
     }
 
@@ -130,7 +149,7 @@ open class Parser(val data: ParserData) {
 
     inner class ThenResult(val key: String)
 
-    inline infix fun <reified T> ThenResult.into(property: KMutableProperty0<T>): IntoResult<T?> {
+    infix fun <T> ThenResult.into(property: KMutableProperty0<T>): IntoResult<T?> {
         return key.into(property)
     }
 
@@ -152,7 +171,7 @@ open class Parser(val data: ParserData) {
         return this
     }
 
-    inline infix fun <reified T> AlterResult.into(property: KMutableProperty0<T>): IntoResult<T?> {
+    infix fun <T> AlterResult.into(property: KMutableProperty0<T>): IntoResult<T?> {
         alterKeys.forEach {
             if (data.jsonObject.has(it)) {
                 return it.into(property)
@@ -179,7 +198,7 @@ open class Parser(val data: ParserData) {
 
     inner class CustomParseResult<T>(val value: T)
 
-    inline infix fun <reified T> CustomParseResult<T>.into(property: KMutableProperty0<in T>): IntoResult<T> {
+    infix fun <T> CustomParseResult<T>.into(property: KMutableProperty0<in T>): IntoResult<T> {
         property.set(value)
         return IntoResult(value)
     }
