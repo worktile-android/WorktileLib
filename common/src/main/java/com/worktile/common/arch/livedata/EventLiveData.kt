@@ -1,23 +1,26 @@
 package com.worktile.common.arch.livedata
 
 import android.os.Looper
-import android.util.Log
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 
-class EventLiveData : LiveData<EventLiveData.Event>() {
-    class Event
-    private val foreverObservers = mutableListOf<Observer<Event>>()
+/**
+ * SingleLiveEvent.java
+ * https://github.com/android/architecture-samples/blob/dev-todo-mvvm-live/todoapp/app/src/main/java/com/example/android/architecture/blueprints/todoapp/SingleLiveEvent.java
+ */
+class EventLiveData<T> : LiveData<T>() {
+
+    private val foreverObservers = mutableListOf<Observer<T>>()
     private var updateIndex = -1
     private var observeIndex = -1
 
-    fun update() {
+    fun update(value: T? = null) {
         updateIndex++
         if (Thread.currentThread().id == Looper.getMainLooper().thread.id) {
-            value = Event()
+            this.value = value
         } else {
-            postValue(Event())
+            postValue(value)
         }
     }
 
@@ -32,7 +35,7 @@ class EventLiveData : LiveData<EventLiveData.Event>() {
     }
 
     fun observeForever(observer: () -> Unit) {
-        observeForever(Observer<Event> {
+        observeForever(Observer<T> {
             observer.invoke()
         }.apply { foreverObservers.add(this) })
     }
