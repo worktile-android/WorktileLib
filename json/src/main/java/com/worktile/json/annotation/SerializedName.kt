@@ -9,4 +9,4 @@ package com.worktile.json.annotation
  * Desc:
  */
 @Target(AnnotationTarget.FIELD)
-annotation class SerializedName(val value:String)
+annotation class SerializedName(val value: String)

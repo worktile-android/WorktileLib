@@ -8,6 +8,7 @@ import org.json.JSONObject
 import kotlin.reflect.KClass
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KMutableProperty0
+import kotlin.reflect.KProperty
 import kotlin.reflect.full.isSubclassOf
 
 const val TAG = "JsonDsl"
@@ -19,29 +20,11 @@ fun Any.parse(block: Parser.() -> Unit) {
     } ?: throw Exception("没有找到json, $this")
 }
 
-private fun KMutableProperty<*>.actualClass(): KClass<*>? {
+internal fun KProperty<*>.actualClass(): KClass<*>? {
     return returnType.classifier as? KClass<*>
 }
 
 open class Parser(val data: ParserData) {
-
-    infix fun parse(block: Parser.() -> Unit) {
-        block.invoke(this)
-    }
-
-    inline fun <reified T> checkTypeAndSet(
-        kClass: KClass<*>,
-        property: KMutableProperty0<T>,
-        value: Any
-    ): IntoResult<T?> {
-        if (kClass.java.isAssignableFrom(T::class.java)) {
-            property.set(value as T)
-            return IntoResult(value)
-        } else {
-            Log.w(TAG, "需要一个Number类型属性，但${value}不是")
-        }
-        return IntoResult()
-    }
 
     infix fun <T> String.into(property: KMutableProperty0<T>): IntoResult<T?> {
         val tkClass = property.actualClass() ?: run {
@@ -71,7 +54,7 @@ open class Parser(val data: ParserData) {
                     } else {
                         Log.w(
                             TAG,
-                            "key ${this@into}对应的值是数组类型，但${property}不是。jsonObject: ${data.jsonObject}"
+                            "key ${this@into}对应的值是List类型，但${property}不是。jsonObject: ${data.jsonObject}"
                         )
                     }
                 }

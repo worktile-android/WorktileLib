@@ -17,12 +17,15 @@ import com.worktile.json.operator.parse
  */
 
 
-class Entry {
+class Entry(
+    @SerializedName("name") val nameA: String,
+    val age: Int
+) {
 
-    @SerializedName("name")
-    var nameA: String? = null
-
-    var age: Int? = null
+//    @SerializedName("name")
+//    var nameA: String? = null
+//
+//    var age: Int? = null
 
     var weight: Double? = null
 
@@ -41,8 +44,8 @@ class Entry {
     @Deserializer
     fun toJson() {
         parse {
-            "name" > ::nameA
-            "age" > ::age
+//            "name" > ::nameA
+//            "age" > ::age
             "weight" > ::weight
             "height" > ::height
             "sex" > ::sex
