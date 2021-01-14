@@ -37,7 +37,6 @@ dependencies {
     testImplementation kotlin_reflect
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
-
 }
 
 configPublish.call(project, 'com.worktile.json', 'json-dsl', json_version)

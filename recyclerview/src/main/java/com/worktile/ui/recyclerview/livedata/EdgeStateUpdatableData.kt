@@ -1,6 +1,5 @@
 package com.worktile.ui.recyclerview.livedata
 
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import com.worktile.common.arch.livedata.EventLiveData
@@ -17,7 +16,7 @@ import com.worktile.ui.recyclerview.viewmodels.data.EdgeStateData
 class EdgeStateUpdatableData(
     internal val defaultViewModel: RecyclerViewViewModel
 ) : UpdatableData<EdgeStateData>() {
-    internal val scrollToEndEventLiveData = EventLiveData()
+    internal val scrollToEndEventLiveData = EventLiveData<Void>()
     private var config: Config? = null
 
     override fun onFirstInitialization(viewModel: RecyclerViewViewModel, config: Config) {
