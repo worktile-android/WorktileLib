@@ -1,7 +1,7 @@
 package com.worktile.lib
 
 import com.worktile.json.annotation.Deserializer
-import com.worktile.json.operator.parse
+import com.worktile.json.parse
 
 class TestOp {
     var value1 = 2

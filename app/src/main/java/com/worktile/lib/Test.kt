@@ -2,7 +2,7 @@ package com.worktile.lib
 
 import com.worktile.json.annotation.Deserializer
 import com.worktile.json.annotation.SerializedName
-import com.worktile.json.operator.parse
+import com.worktile.json.parse
 
 /**
  * Created by Android Studio.

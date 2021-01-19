@@ -13,16 +13,16 @@ class Test {
     @Deserializer
     fun test() {
         parse {
-            "123" alter "000" alter "aaa" into ::value3 attach {
+            "123" / "000" / "aaa" > ::value3 {
 
             }
-            "456" then {
-                "678" into ::value2
-            } into ::value1
-            "user".parse<People> {
+            "456" {
+                "678" > ::value2
+            } > ::value1
+            "user" <People> {
 
-            } into ::value4
-            "ddd" into ::value5
+            } > ::value4
+            "ddd" > ::value5
         }
     }
 }
