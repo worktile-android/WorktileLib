@@ -26,27 +26,37 @@ class Operation(val data: ParserData) {
         value?.run {
             when (value) {
                 is JSONObject -> {
-                    val result = data.jsonDsl.parse(value, tkClass) as T
+                    val result = if (tkClass != Any::class) {
+                        data.jsonDsl.parse(value, tkClass) as T
+                    } else {
+                        value as T
+                    }
                     property.set(result)
                     return IntoResult(result)
                 }
                 is JSONArray -> {
-                    if (tkClass.isSubclassOf(List::class)) {
-                        val argumentType = property.returnType.arguments[0]
-                        (argumentType.type?.classifier as? KClass<*>)?.apply {
-                            val list = mutableListOf<Any>()
-                            for (index in 0 until value.length()) {
-                                val itemJson = value[index] as JSONObject
-                                list.add(data.jsonDsl.parse(itemJson, this))
-                            }
-                            property.set(list as T)
-                            return IntoResult(list)
-                        } ?: Log.w(TAG, "找不到泛型类型")
-                    } else {
-                        Log.w(
-                            TAG,
-                            "key ${this@into}对应的值是List类型，但${property}不是。jsonObject: ${data.jsonObject}"
-                        )
+                    when {
+                        tkClass.isSubclassOf(List::class) -> {
+                            val argumentType = property.returnType.arguments[0]
+                            (argumentType.type?.classifier as? KClass<*>)?.apply {
+                                val list = mutableListOf<Any>()
+                                for (index in 0 until value.length()) {
+                                    val itemJson = value[index] as JSONObject
+                                    list.add(data.jsonDsl.parse(itemJson, this))
+                                }
+                                property.set(list as T)
+                                return IntoResult(list)
+                            } ?: Log.w(TAG, "找不到泛型类型")
+                        }
+                        tkClass == Any::class -> {
+                            property.set(value as T)
+                        }
+                        else -> {
+                            Log.w(
+                                TAG,
+                                "key ${this@into}对应的值是List类型，但${property}不是。jsonObject: ${data.jsonObject}"
+                            )
+                        }
                     }
                 }
                 is Number -> {
@@ -103,6 +113,17 @@ class Operation(val data: ParserData) {
         return IntoResult()
     }
 
+    private class IntoBlockTemp {
+        var value: Any? = null
+    }
+
+    fun String.intoBlock(block: (Any?) -> Unit) {
+        IntoBlockTemp().apply {
+            into(::value)
+            block.invoke(value)
+        }
+    }
+
     inner class IntoResult<T>(val propertyValue: T? = null)
 
     infix fun <T> IntoResult<T>.attach(block: Parser.(t: T?) -> Unit) {
@@ -154,6 +175,16 @@ class Operation(val data: ParserData) {
         return IntoResult()
     }
 
+    fun AlterResult.intoBlock(block: (Any?) -> Unit) {
+        IntoBlockTemp().apply {
+            alterKeys.forEach {
+                if (data.jsonObject.has(it)) {
+                    return it.intoBlock(block)
+                }
+            }
+        }
+    }
+
     inline infix fun <reified T> String.parse(block: Parser.(t: T) -> Unit): CustomParseResult<T> {
         val value = T::class.java.newInstance()
         when (val thenObject = data.jsonObject.opt(this)) {
@@ -175,5 +206,44 @@ class Operation(val data: ParserData) {
     infix fun <T> CustomParseResult<T>.into(property: KMutableProperty0<in T>): IntoResult<T> {
         property.set(value)
         return IntoResult(value)
+    }
+
+    fun String.foreach(block: Parser.() -> Unit) {
+        when (val jsonArray = data.jsonObject.opt(this)) {
+            null -> {
+                Log.w(TAG, "key \"${this}\"不存在于${data.jsonObject}中")
+            }
+            is JSONArray -> {
+                parseJsonArray(jsonArray, block)
+            }
+            else -> {
+                Log.w(TAG, "key \"${this}\"对应的值不是JSONArray，无法执行foreach方法")
+            }
+        }
+    }
+
+    private fun parseJsonArray(
+        jsonArray: JSONArray,
+        block: Parser.() -> Unit
+    ) {
+        val length = jsonArray.length()
+        for (index in 0 .. length) {
+            when (val item = jsonArray[index]) {
+                is JSONObject -> {
+                    val parserData = ParserData(
+                        data.jsonDsl,
+                        item,
+                        indexInArray = index
+                    )
+                    block.invoke(Parser(parserData))
+                }
+
+                is JSONArray -> {
+//                    parseJsonArray(item, block)
+                }
+
+//                else -> block.invoke(Parser(data), item)
+            }
+        }
     }
 }

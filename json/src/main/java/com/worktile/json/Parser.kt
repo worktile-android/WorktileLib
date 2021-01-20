@@ -3,6 +3,7 @@ package com.worktile.json
 import com.worktile.json.*
 import com.worktile.json.Operation.*
 import java.lang.Exception
+import kotlin.reflect.KClass
 import kotlin.reflect.KMutableProperty0
 
 fun Any.parse(block: Parser.() -> Unit) {
@@ -21,6 +22,11 @@ class Parser(data: ParserData) {
 
     infix operator fun <T> String.compareTo(property: KMutableProperty0<T>): Int {
         operation.apply { into(property) }
+        return 0
+    }
+
+    operator fun String.compareTo(block: (Any?) -> Unit): Int {
+        operation.apply { intoBlock(block) }
         return 0
     }
 
@@ -80,9 +86,18 @@ class Parser(data: ParserData) {
         return 0
     }
 
+    operator fun AlterResult.compareTo(block: (Any?) -> Unit): Int {
+        operation.run { intoBlock(block) }
+        return 0
+    }
+
     infix operator fun <T> AlterResult.compareTo(attachResult: AttachResult<T>): Int {
         operation.run { into(attachResult.property).attach(attachResult.attach) }
         return 0
+    }
+
+    infix operator fun String.get(block: Parser.() -> Unit) {
+        operation.run { foreach(block) }
     }
 
     inline infix operator fun <reified T> String.get(block: Parser.(t: T) -> Unit) {

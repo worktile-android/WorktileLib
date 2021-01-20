@@ -11,6 +11,9 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.worktile.common.default
+import com.worktile.json.JsonDsl
+import com.worktile.json.Parser
+import com.worktile.json.ParserData
 import com.worktile.ui.recyclerview.*
 import com.worktile.ui.recyclerview.binder.bind
 import com.worktile.ui.recyclerview.LoadingState
@@ -19,6 +22,7 @@ import com.worktile.ui.recyclerview.livedata.extension.set
 import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
+import org.json.JSONObject
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
@@ -30,6 +34,33 @@ class MainActivity : AppCompatActivity() {
             MainActivityViewModel::class.java
         )
         recycler_view.bind(viewModel, this)
+
+        val parser = Parser(ParserData(JsonDsl(), JSONObject("{\n" +
+                "    \"data\": {\n" +
+                "        \"a\" : {\n" +
+                "            \"user\": [\n" +
+                "                { \"name\": \"hhhhh\" }\n" +
+                "            ]\n" +
+                "        }\n" +
+                "    }\n" +
+                "}")))
+        parser.apply {
+            "data" {
+                "a" {
+                    "user" {
+                        print(operation.data.jsonObject)
+                    }
+
+                    "user" [{
+
+                    }]
+                    "user" > {
+
+                    }
+                }
+            }
+        }
+
         button.setOnClickListener {
             viewModel.updateData()
         }
