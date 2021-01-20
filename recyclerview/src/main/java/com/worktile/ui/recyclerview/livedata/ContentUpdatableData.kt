@@ -8,7 +8,7 @@ import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
 class ContentUpdatableData(
     internal val defaultViewModel: RecyclerViewViewModel
 ) : UpdatableData<MutableList<ItemDefinition>>() {
-    var value: MutableList<ItemDefinition> = mutableListOf()
+    val value: MutableList<ItemDefinition> = mutableListOf()
 
     override fun onFirstInitialization(viewModel: RecyclerViewViewModel, config: Config) {
 
