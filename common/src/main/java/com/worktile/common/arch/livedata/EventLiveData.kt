@@ -24,19 +24,19 @@ class EventLiveData<T> : LiveData<T>() {
         }
     }
 
-    fun observe(owner: LifecycleOwner, observer: () -> Unit) {
+    fun observe(owner: LifecycleOwner, observer: (value: T?) -> Unit) {
         observe(owner, Observer {
             if (observeIndex >= updateIndex) {
                 return@Observer
             }
             observeIndex = updateIndex
-            observer.invoke()
+            observer.invoke(it)
         })
     }
 
-    fun observeForever(observer: () -> Unit) {
+    fun observeForever(observer: (value: T?) -> Unit) {
         observeForever(Observer<T> {
-            observer.invoke()
+            observer.invoke(it)
         }.apply { foreverObservers.add(this) })
     }
 
