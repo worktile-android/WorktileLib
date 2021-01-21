@@ -20,8 +20,8 @@ class Parser(data: ParserData) {
         block.invoke(this)
     }
 
-    infix operator fun <T> String.compareTo(property: KMutableProperty0<T>): Int {
-        operation.apply { into(property) }
+    inline operator fun <reified T : Any> String.compareTo(property: KMutableProperty0<T?>): Int {
+        operation.apply { into(property, T::class) }
         return 0
     }
 
@@ -30,9 +30,9 @@ class Parser(data: ParserData) {
         return 0
     }
 
-    operator fun <T> String.compareTo(attachResult: AttachResult<T>): Int {
+    inline operator fun <reified T : Any> String.compareTo(attachResult: AttachResult<T?>): Int {
         operation.apply {
-            val intoResult = into(attachResult.property)
+            val intoResult = into(attachResult.property, T::class)
             intoResult.attach(attachResult.attach)
         }
         return 0
@@ -46,14 +46,18 @@ class Parser(data: ParserData) {
 
     inner class AttachResult<T>(val property: KMutableProperty0<T>, val attach: Parser.(t: T?) -> Unit)
 
+    inline operator fun <reified T : Any> String.invoke(): T? {
+        return operation.run { directReturn(T::class) }
+    }
+
     infix operator fun String.invoke(block: Parser.() -> Unit): ThenResult {
         return operation.run { then(block) }
     }
 
     inline operator fun <reified T : Any> String.invoke(
-        block: Parser.(t: T) -> Unit
+        noinline block: Parser.(t: T) -> Unit
     ): CustomParseResult<T> {
-        return operation.run { parse(block) }
+        return operation.run { parse(block, T::class) }
     }
 
     operator fun <T> CustomParseResult<T>.compareTo(property: KMutableProperty0<in T>): Int {
@@ -65,14 +69,14 @@ class Parser(data: ParserData) {
         return operation.run { alter(key) }
     }
 
-    infix operator fun <T> ThenResult.compareTo(property: KMutableProperty0<T>): Int {
-        operation.apply { into(property) }
+    inline operator fun <reified T : Any> ThenResult.compareTo(property: KMutableProperty0<T?>): Int {
+        operation.apply { into(property, T::class) }
         return 0
     }
 
-    infix operator fun <T> ThenResult.compareTo(attachResult: AttachResult<T>): Int {
+    inline operator fun <reified T : Any> ThenResult.compareTo(attachResult: AttachResult<T?>): Int {
         operation.apply {
-            into(attachResult.property).attach(attachResult.attach)
+            into(attachResult.property, T::class).attach(attachResult.attach)
         }
         return 0
     }
@@ -81,8 +85,8 @@ class Parser(data: ParserData) {
         return operation.run { alter(key) }
     }
 
-    infix operator fun <T> AlterResult.compareTo(property: KMutableProperty0<T>): Int {
-        operation.run { into(property) }
+    inline operator fun <reified T : Any> AlterResult.compareTo(property: KMutableProperty0<T?>): Int {
+        operation.run { into(property, T::class) }
         return 0
     }
 
@@ -91,8 +95,8 @@ class Parser(data: ParserData) {
         return 0
     }
 
-    infix operator fun <T> AlterResult.compareTo(attachResult: AttachResult<T>): Int {
-        operation.run { into(attachResult.property).attach(attachResult.attach) }
+    inline operator fun <reified T : Any> AlterResult.compareTo(attachResult: AttachResult<T?>): Int {
+        operation.run { into(attachResult.property, T::class).attach(attachResult.attach) }
         return 0
     }
 

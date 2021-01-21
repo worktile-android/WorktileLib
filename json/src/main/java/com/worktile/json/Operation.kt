@@ -15,13 +15,20 @@ internal fun KProperty<*>.actualClass(): KClass<*>? {
     return returnType.classifier as? KClass<*>
 }
 
+private class IntoBlockTemp {
+    var value: Any? = null
+}
+
+private class DirectReturnTemp<T> {
+    var value: T? = null
+}
+
+private val intoBlockTemp = IntoBlockTemp()
+private val directReturnTemp = DirectReturnTemp<Any>()
+
 class Operation(val data: ParserData) {
 
-    infix fun <T> String.into(property: KMutableProperty0<T>): IntoResult<T?> {
-        val tkClass = property.actualClass() ?: run {
-            Log.w(TAG, "找不到属性${property.name}的类型")
-            return IntoResult()
-        }
+    fun <T : Any> String.into(property: KMutableProperty0<T?>, tkClass: KClass<T>): IntoResult<T?> {
         val value = data.jsonObject.opt(this)
         value?.run {
             when (value) {
@@ -113,24 +120,29 @@ class Operation(val data: ParserData) {
         return IntoResult()
     }
 
-    private class IntoBlockTemp {
-        var value: Any? = null
-    }
-
     fun String.intoBlock(block: (Any?) -> Unit) {
-        IntoBlockTemp().apply {
-            into(::value)
+        intoBlockTemp.apply {
+            value = null
+            into(::value, Any::class)
             block.invoke(value)
         }
     }
 
+    fun <T : Any> String.directReturn(tkClass: KClass<T>): T? {
+        val temp = directReturnTemp.apply {
+            value = null
+            into(::value as KMutableProperty0<T?>, tkClass)
+        }
+        return temp.value as? T
+    }
+
     inner class IntoResult<T>(val propertyValue: T? = null)
 
-    infix fun <T> IntoResult<T>.attach(block: Parser.(t: T?) -> Unit) {
+    fun <T> IntoResult<T>.attach(block: Parser.(t: T?) -> Unit) {
         block.invoke(Parser(data), this.propertyValue)
     }
 
-    infix fun String.then(block: Parser.() -> Unit): ThenResult {
+    fun String.then(block: Parser.() -> Unit): ThenResult {
         val thenObject = data.jsonObject.opt(this@then)
         thenObject?.run {
             if (thenObject is JSONObject) {
@@ -144,11 +156,14 @@ class Operation(val data: ParserData) {
 
     inner class ThenResult(val key: String)
 
-    infix fun <T> ThenResult.into(property: KMutableProperty0<T>): IntoResult<T?> {
-        return key.into(property)
+    fun <T : Any> ThenResult.into(
+        property: KMutableProperty0<T?>,
+        tkClass: KClass<T>
+    ): IntoResult<T?> {
+        return key.into(property, tkClass)
     }
 
-    infix fun String.alter(key: String): AlterResult {
+    fun String.alter(key: String): AlterResult {
         val alterResult = AlterResult()
         alterResult.alterKeys.run {
             add(this@alter)
@@ -166,10 +181,13 @@ class Operation(val data: ParserData) {
         return this
     }
 
-    infix fun <T> AlterResult.into(property: KMutableProperty0<T>): IntoResult<T?> {
+    fun <T : Any> AlterResult.into(
+        property: KMutableProperty0<T?>,
+        tkClass: KClass<T>
+    ): IntoResult<T?> {
         alterKeys.forEach {
             if (data.jsonObject.has(it)) {
-                return it.into(property)
+                return it.into(property, tkClass)
             }
         }
         return IntoResult()
@@ -185,8 +203,11 @@ class Operation(val data: ParserData) {
         }
     }
 
-    inline infix fun <reified T> String.parse(block: Parser.(t: T) -> Unit): CustomParseResult<T> {
-        val value = T::class.java.newInstance()
+    fun <T : Any> String.parse(
+        block: Parser.(t: T) -> Unit,
+        tkClass: KClass<T>
+    ): CustomParseResult<T> {
+        val value = tkClass.java.newInstance()
         when (val thenObject = data.jsonObject.opt(this)) {
             null -> {
                 Log.w(TAG, "key \"${this}\"不存在于${data.jsonObject}中")
@@ -227,7 +248,7 @@ class Operation(val data: ParserData) {
         block: Parser.() -> Unit
     ) {
         val length = jsonArray.length()
-        for (index in 0 .. length) {
+        for (index in 0 until length) {
             when (val item = jsonArray[index]) {
                 is JSONObject -> {
                     val parserData = ParserData(
