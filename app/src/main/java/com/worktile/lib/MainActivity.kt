@@ -35,30 +35,14 @@ class MainActivity : AppCompatActivity() {
         )
         recycler_view.bind(viewModel, this)
 
-        val parser = Parser(ParserData(JsonDsl(), JSONObject("{\n" +
-                "    \"data\": {\n" +
-                "        \"a\" : {\n" +
-                "            \"user\": [\n" +
-                "                { \"name\": \"hhhhh\" }\n" +
-                "            ]\n" +
-                "        }\n" +
+        val json = JSONObject("{\n" +
+                "    \"user\": {\n" +
+                "        \"name\": \"hhhh\"\n" +
                 "    }\n" +
-                "}")))
-        parser.apply {
-            "data" {
-                "a" {
-                    "user" {
-                        print(operation.data.jsonObject)
-                    }
-
-                    "user" [{
-
-                    }]
-                    "user" > {
-
-                    }
-                }
-            }
+                "}")
+        Parser(ParserData(JsonDsl(), json)).apply {
+            val name = "user.name"<String>()
+            println("name: $name")
         }
 
         button.setOnClickListener {

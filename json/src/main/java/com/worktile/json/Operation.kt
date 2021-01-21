@@ -28,7 +28,7 @@ private val directReturnTemp = DirectReturnTemp<Any>()
 
 class Operation(val data: ParserData) {
 
-    fun <T : Any> String.into(property: KMutableProperty0<T?>, tkClass: KClass<T>): IntoResult<T?> {
+    fun <T> String.into(property: KMutableProperty0<T>, tkClass: KClass<*>): IntoResult<T> {
         val value = data.jsonObject.opt(this)
         value?.run {
             when (value) {
@@ -128,12 +128,29 @@ class Operation(val data: ParserData) {
         }
     }
 
-    fun <T : Any> String.directReturn(tkClass: KClass<T>): T? {
-        val temp = directReturnTemp.apply {
-            value = null
-            into(::value as KMutableProperty0<T?>, tkClass)
+    fun <T> String.directReturn(tkClass: KClass<*>): T? {
+        val keys = split('.')
+        val keySize = keys.size
+        var thenBlock: (Operation) -> Unit = { operation ->
+            directReturnTemp.value = null
+            operation.apply {
+                keys[keySize - 1].into(
+                    directReturnTemp::value as KMutableProperty0<T>,
+                    tkClass
+                )
+            }
         }
-        return temp.value as? T
+        for (index in keySize - 2 downTo 0) {
+            val key = keys[index]
+            val lastBlock = thenBlock
+            thenBlock = {
+                key.then {
+                    lastBlock.invoke(operation)
+                }
+            }
+        }
+        thenBlock.invoke(Operation(data))
+        return directReturnTemp.value as? T
     }
 
     inner class IntoResult<T>(val propertyValue: T? = null)
@@ -156,10 +173,10 @@ class Operation(val data: ParserData) {
 
     inner class ThenResult(val key: String)
 
-    fun <T : Any> ThenResult.into(
-        property: KMutableProperty0<T?>,
-        tkClass: KClass<T>
-    ): IntoResult<T?> {
+    fun <T> ThenResult.into(
+        property: KMutableProperty0<T>,
+        tkClass: KClass<*>
+    ): IntoResult<T> {
         return key.into(property, tkClass)
     }
 
@@ -176,15 +193,15 @@ class Operation(val data: ParserData) {
         val alterKeys = mutableListOf<String>()
     }
 
-    infix fun AlterResult.alter(key: String): AlterResult {
+    fun AlterResult.alter(key: String): AlterResult {
         alterKeys.add(key)
         return this
     }
 
-    fun <T : Any> AlterResult.into(
-        property: KMutableProperty0<T?>,
-        tkClass: KClass<T>
-    ): IntoResult<T?> {
+    fun <T> AlterResult.into(
+        property: KMutableProperty0<T>,
+        tkClass: KClass<*>
+    ): IntoResult<T> {
         alterKeys.forEach {
             if (data.jsonObject.has(it)) {
                 return it.into(property, tkClass)
@@ -203,11 +220,11 @@ class Operation(val data: ParserData) {
         }
     }
 
-    fun <T : Any> String.parse(
+    fun <T> String.parse(
         block: Parser.(t: T) -> Unit,
-        tkClass: KClass<T>
+        tkClass: KClass<*>
     ): CustomParseResult<T> {
-        val value = tkClass.java.newInstance()
+        val value = tkClass.java.newInstance() as T
         when (val thenObject = data.jsonObject.opt(this)) {
             null -> {
                 Log.w(TAG, "key \"${this}\"不存在于${data.jsonObject}中")
@@ -224,7 +241,7 @@ class Operation(val data: ParserData) {
 
     inner class CustomParseResult<T>(val value: T)
 
-    infix fun <T> CustomParseResult<T>.into(property: KMutableProperty0<in T>): IntoResult<T> {
+    fun <T> CustomParseResult<T>.into(property: KMutableProperty0<in T>): IntoResult<T> {
         property.set(value)
         return IntoResult(value)
     }

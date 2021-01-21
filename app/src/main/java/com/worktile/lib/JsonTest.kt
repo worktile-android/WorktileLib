@@ -23,6 +23,10 @@ class Test {
 
             } > ::value4
             "ddd" > ::value5
+            "ccc"[{
+
+            }]
+            "vvv"<String>()
         }
     }
 }

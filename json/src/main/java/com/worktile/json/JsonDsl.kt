@@ -62,7 +62,13 @@ class JsonDsl(private val autoDeserialize: Boolean = true) {
         val params = mutableListOf<Pair<KProperty1<*, *>, Any>>()
 
         kClass.declaredMemberProperties.forEach { property ->
-            if (property.annotations.any { it.annotationClass == Ignore::class }) return@forEach
+            val shouldIgnore = property
+                .javaField
+                ?.annotations
+                ?.any {
+                    it.annotationClass == Ignore::class
+                } == true
+            if (shouldIgnore) return@forEach
             val jsonFieldName = getSerializedName(property.javaField?.annotations) ?: property.name
             property.isAccessible = true
             jsonObject.opt(jsonFieldName)?.let {

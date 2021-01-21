@@ -2,6 +2,7 @@ package com.worktile.json
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.json.JSONObject
 
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -15,6 +16,10 @@ import kotlin.reflect.full.primaryConstructor
  *
  * See [testing documentation](http://d.android.com/tools/testing).
  */
+class Test {
+    var aaa: String = ""
+}
+
 @RunWith(AndroidJUnit4::class)
 class ExampleInstrumentedTest {
 
@@ -43,5 +48,18 @@ class ExampleInstrumentedTest {
     @Test
     fun h() {
         println(H::class.primaryConstructor)
+    }
+
+    @Test
+    fun directReturn() {
+        val json = JSONObject("{\n" +
+                "    \"user\": {\n" +
+                "        \"name\": \"hhhh\"\n" +
+                "    }\n" +
+                "}")
+        Parser(ParserData(JsonDsl(), json)).apply {
+            val name = "user.name"<String>()
+            assertEquals("hhhh", name)
+        }
     }
 }
