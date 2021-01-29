@@ -130,27 +130,35 @@ class Operation(val data: ParserData) {
 
     fun <T> String.directReturn(tkClass: KClass<*>): T? {
         val keys = split('.')
-        val keySize = keys.size
-        var thenBlock: (Operation) -> Unit = { operation ->
-            directReturnTemp.value = null
-            operation.apply {
-                keys[keySize - 1].into(
-                    directReturnTemp::value as KMutableProperty0<T>,
-                    tkClass
-                )
+        directReturnTemp.value = null
+        directReturnSplitBlock<T>(0, keys, tkClass).invoke(Operation(data))
+        return directReturnTemp.value as? T
+    }
+
+    private fun <T> directReturnSplitBlock(
+        index: Int,
+        keys: List<String>,
+        tkClass: KClass<*>
+    ): (Operation) -> Unit {
+        return if (index == keys.size - 1) {
+            {
+                it.apply {
+                    keys[index].into(
+                        directReturnTemp::value as KMutableProperty0<T>,
+                        tkClass
+                    )
+                }
             }
-        }
-        for (index in keySize - 2 downTo 0) {
-            val key = keys[index]
-            val lastBlock = thenBlock
-            thenBlock = {
-                key.then {
-                    lastBlock.invoke(operation)
+        } else {
+            {
+                it.apply {
+                    keys[index].then {
+                        directReturnSplitBlock<T>(index + 1, keys, tkClass)
+                            .invoke(operation)
+                    }
                 }
             }
         }
-        thenBlock.invoke(Operation(data))
-        return directReturnTemp.value as? T
     }
 
     inner class IntoResult<T>(val propertyValue: T? = null)

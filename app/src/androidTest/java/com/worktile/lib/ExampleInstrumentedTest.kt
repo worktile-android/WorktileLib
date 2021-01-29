@@ -2,6 +2,9 @@ package com.worktile.lib
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.worktile.json.JsonDsl
+import com.worktile.json.Parser
+import com.worktile.json.ParserData
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -48,6 +51,24 @@ class ExampleInstrumentedTest {
             JsonDsl().parse<People>("{\"name\":\"xixi\",\"address\":\"Beijing\"}")
         assertEquals("xixi", entry.name)
         assertEquals(null, entry.address)
+    }
+
+    @Test
+    fun testDirectReturn() {
+        val json = JSONObject("{\n" +
+                "        \"people\": {\n" +
+                "            \"user\": {\n" +
+                "                \"parent\": {\n" +
+                "                    \"child\": {\n" +
+                "                        \"name\": \"123\"\n" +
+                "                    }\n" +
+                "                }\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }")
+        Parser(ParserData(JsonDsl(), json)).apply {
+            assertEquals("people.user.parent.child.name"(""), "123")
+        }
     }
 
 
