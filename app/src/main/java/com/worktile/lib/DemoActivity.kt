@@ -11,8 +11,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.lifecycle.ViewModel
 import com.worktile.common.default
-import com.worktile.ui.recyclerview.ItemDefinition
 import com.worktile.ui.recyclerview.DiffItemViewModel
+import com.worktile.ui.recyclerview.ItemDefinition
 import com.worktile.ui.recyclerview.LoadingState
 import com.worktile.ui.recyclerview.binder.bind
 import com.worktile.ui.recyclerview.decoration.LineDecoration
@@ -53,7 +53,7 @@ class DemoViewModel : ViewModel(), RecyclerViewViewModel by default() {
         GlobalScope.launch {
             delay(3000)
             loadingState set LoadingState.SUCCESS
-            recyclerViewData.value?.run {
+            recyclerViewData.value.run {
                 for (item in 0..30) {
                     when (item) {
                         0 -> add(CategoryItemViewModel(item, "工作"))
