@@ -9,7 +9,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.worktile.common.Worktile
 import com.worktile.common.utils.UnitConversion
 
-class LineDecoration : RecyclerView.ItemDecoration() {
+class LineDecoration(private val ignoreDrawLines: Array<Int> = arrayOf()) :
+    RecyclerView.ItemDecoration() {
     private val paint: Paint = Paint()
 
     var marginLeft = 72f
@@ -20,8 +21,11 @@ class LineDecoration : RecyclerView.ItemDecoration() {
     override fun onDrawOver(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
         super.onDrawOver(c, parent, state)
 
-        Worktile.activityContext?.let { context ->
+        Worktile.activityContext.let { context ->
             for (i in 0 until parent.childCount) {
+                if (ignoreDrawLines.indexOf(i) != -1) {
+                    continue
+                }
                 val drawLeft = parent.left + UnitConversion.dp2px(context, marginLeft).toFloat()
                 val drawRight = parent.right.toFloat()
                 val drawBottom = parent.getChildAt(i).bottom.toFloat()
@@ -34,7 +38,7 @@ class LineDecoration : RecyclerView.ItemDecoration() {
     init {
         colorResource?.apply {
             Log.w("LineDecoration", "设置了colorResource，优先使用colorResource")
-            Worktile.activityContext?.run {
+            Worktile.activityContext.run {
                 paint.color = ContextCompat.getColor(this, this@apply)
             }
         } ?: kotlin.run { paint.color = color }
