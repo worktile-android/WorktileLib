@@ -77,11 +77,17 @@ class SimpleAdapter<T>(
 
                     override fun getNewListSize() = newData.size
 
-                    override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                    override fun areItemsTheSame(
+                        oldItemPosition: Int,
+                        newItemPosition: Int
+                    ): Boolean {
                         return oldData[oldItemPosition].key() == newData[newItemPosition].key()
                     }
 
-                    override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                    override fun areContentsTheSame(
+                        oldItemPosition: Int,
+                        newItemPosition: Int
+                    ): Boolean {
                         val oldContent = contentSparseArray[oldItemPosition] ?: run {
                             val content = oldData[oldItemPosition].content()
                             contentSparseArray.put(oldItemPosition, content)
@@ -89,9 +95,21 @@ class SimpleAdapter<T>(
                         }
                         val newContent = newData[newItemPosition].content()
                         if (oldContent == null || newContent == null) {
+                            if (BuildConfig.DEBUG) {
+                                Log.d(
+                                    TAG, "content are not same," +
+                                            " oldContent: ${oldContent}, newContent: $newContent"
+                                )
+                            }
                             return false
                         }
                         if (oldContent.size != newContent.size) {
+                            if (BuildConfig.DEBUG) {
+                                Log.d(
+                                    TAG, "content sizes are not equals," +
+                                            " old: ${oldContent.size}, new: ${newContent.size}"
+                                )
+                            }
                             return false
                         }
 
@@ -101,9 +119,19 @@ class SimpleAdapter<T>(
                                 return@forEachIndexed
                             }
                             if (oldContentItem.value == null || newContentItem.value == null) {
+                                if (BuildConfig.DEBUG) {
+                                    Log.d(TAG, "content are not same" +
+                                            ", old: ${oldContentItem.value}" +
+                                            ", new: ${newContentItem.value}")
+                                }
                                 return false
                             }
                             if (oldContentItem.value::class != newContentItem.value::class) {
+                                if (BuildConfig.DEBUG) {
+                                    Log.d(TAG, "content are not same" +
+                                            ", old class: ${oldContentItem.value::class}" +
+                                            ", new class: ${newContentItem.value::class}")
+                                }
                                 return false
                             }
                             val oldComparatorResult = oldContentItem.comparator?.compare(
@@ -116,18 +144,45 @@ class SimpleAdapter<T>(
                             )
                             if (oldComparatorResult != null && newComparatorResult != null) {
                                 if (oldComparatorResult != newComparatorResult) {
-                                    Log.w("SimpleAdapter", "item ${oldData[oldItemPosition].key()}前后两次对比结果不同")
+                                    Log.w(
+                                        "SimpleAdapter",
+                                        "item ${oldData[oldItemPosition].key()}前后两次对比结果不同"
+                                    )
                                     return false
                                 } else {
                                     val result = oldComparatorResult && newComparatorResult
-                                    if (result) return@forEachIndexed else return false
+                                    if (result) return@forEachIndexed else {
+                                        if (BuildConfig.DEBUG) {
+                                            Log.d(TAG, "content are not same" +
+                                                    ", old: ${oldContentItem.value}" +
+                                                    ", new: ${newContentItem.value}" +
+                                                    ", custom comparators are not null")
+                                        }
+                                        return false
+                                    }
                                 }
                             } else if (oldComparatorResult == null && newComparatorResult == null) {
                                 val result = oldContentItem.value == newContentItem.value
-                                if (result) return@forEachIndexed else return false
+                                if (result) return@forEachIndexed else {
+                                    if (BuildConfig.DEBUG) {
+                                        Log.d(TAG, "content are not same" +
+                                                ", old: ${oldContentItem.value}" +
+                                                ", new: ${newContentItem.value}" +
+                                                ", default comparator")
+                                    }
+                                    return false
+                                }
                             } else {
-                                val result = (oldComparatorResult ?: true) && (newComparatorResult ?: true)
-                                if (result) return@forEachIndexed else return false
+                                val result =
+                                    (oldComparatorResult ?: true) && (newComparatorResult ?: true)
+                                if (result) return@forEachIndexed else {
+                                    if (BuildConfig.DEBUG) {
+                                        Log.d(TAG, "content are not same" +
+                                                ", old: ${oldContentItem.value}" +
+                                                ", new: ${newContentItem.value}")
+                                    }
+                                    return false
+                                }
                             }
                         }
 
