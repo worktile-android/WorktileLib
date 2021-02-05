@@ -14,6 +14,7 @@ import kotlinx.android.synthetic.main.item_empty.view.*
 class LoadingStateUpdatableData(
     internal val defaultViewModel: RecyclerViewViewModel
 ) : UpdatableData<LoadingState>() {
+    private var currentState = LoadingState.INIT
     private var config: Config? = null
 
     override fun onFirstInitialization(viewModel: RecyclerViewViewModel, config: Config) {
@@ -53,28 +54,32 @@ class LoadingStateUpdatableData(
     }
 
     override fun update(value: LoadingState) {
-        when (value) {
-            LoadingState.LOADING -> {
-                defaultViewModel.adapterData.internalPostValue(
-                    AdapterLiveDataValue(mutableListOf(loadingItemViewModel))
-                )
+        if (value != currentState) {
+            when (value) {
+                LoadingState.LOADING -> {
+                    defaultViewModel.adapterData.internalPostValue(
+                        AdapterLiveDataValue(mutableListOf(loadingItemViewModel))
+                    )
+                }
+                LoadingState.EMPTY -> {
+                    defaultViewModel.adapterData.internalPostValue(
+                        AdapterLiveDataValue(mutableListOf(emptyItemViewModel))
+                    )
+                }
+                LoadingState.FAILED -> {
+                    defaultViewModel.adapterData.internalPostValue(
+                        AdapterLiveDataValue(mutableListOf(failureItemViewModel))
+                    )
+                }
+                LoadingState.SUCCESS -> {
+                    defaultViewModel.adapterData.internalPostValue(
+                        AdapterLiveDataValue(mutableListOf())
+                    )
+                }
+                else -> {
+                }
             }
-            LoadingState.EMPTY -> {
-                defaultViewModel.adapterData.internalPostValue(
-                    AdapterLiveDataValue(mutableListOf(emptyItemViewModel))
-                )
-            }
-            LoadingState.FAILED -> {
-                defaultViewModel.adapterData.internalPostValue(
-                    AdapterLiveDataValue(mutableListOf(failureItemViewModel))
-                )
-            }
-            LoadingState.SUCCESS -> {
-                defaultViewModel.adapterData.internalPostValue(
-                    AdapterLiveDataValue(mutableListOf())
-                )
-            }
-            else -> {}
+            currentState = value
         }
     }
 }

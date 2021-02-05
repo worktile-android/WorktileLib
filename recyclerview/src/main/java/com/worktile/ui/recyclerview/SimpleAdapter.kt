@@ -73,15 +73,32 @@ class SimpleAdapter<T>(
                             ", thread = { id: ${Thread.currentThread().id}, name: ${Thread.currentThread().name}}")
                 }
                 val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
-                    override fun getOldListSize() = oldData.size
+                    override fun getOldListSize(): Int {
+                        val size = oldData.size
+                        if (BuildConfig.DEBUG) {
+                            Log.d(TAG, "oldDataSize: $size")
+                        }
+                        return size
+                    }
 
-                    override fun getNewListSize() = newData.size
+                    override fun getNewListSize(): Int {
+                        val size = newData.size
+                        if (BuildConfig.DEBUG) {
+                            Log.d(TAG, "newDataSize: $size")
+                        }
+                        return size
+                    }
 
                     override fun areItemsTheSame(
                         oldItemPosition: Int,
                         newItemPosition: Int
                     ): Boolean {
-                        return oldData[oldItemPosition].key() == newData[newItemPosition].key()
+                        val oldKey = oldData[oldItemPosition].key()
+                        val newKey = newData[newItemPosition].key()
+                        if (BuildConfig.DEBUG) {
+                            Log.d(TAG, "oldKey: $oldKey, newKey: $newKey")
+                        }
+                        return oldKey == newKey
                     }
 
                     override fun areContentsTheSame(

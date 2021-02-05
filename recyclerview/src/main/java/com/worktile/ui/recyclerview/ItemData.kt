@@ -48,6 +48,7 @@ interface DiffItemViewModel : ItemViewModel {
     override fun content(): Array<ContentItem<*>>? {
         val contentList = mutableListOf<ContentItem<*>>()
         getAllFields(this)
+            .filter { !it.name.endsWith("_skip") }
             .forEach {
                 it.isAccessible = true
                 contentList.add(ContentItem(it.get(this)))
@@ -59,8 +60,8 @@ interface DiffItemViewModel : ItemViewModel {
         @Default
         fun create(): DiffItemViewModel {
             return object : DiffItemViewModel {
-                val key = UUID.randomUUID()
-                override fun key() = key
+                val key_skip = UUID.randomUUID()
+                override fun key() = key_skip
             }
         }
     }
