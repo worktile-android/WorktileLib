@@ -11,7 +11,8 @@ import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
 fun <T> RecyclerView.bind(
     viewModel: T,
     owner: LifecycleOwner,
-    config: Config = Config()
+    config: Config = Config(),
+    updateCallback: (() -> Unit)? = null
 ) where T : RecyclerViewViewModel, T : ViewModel {
     layoutManager = LinearLayoutManager(this.context)
     val adapter: SimpleAdapter<ItemDefinition> = SimpleAdapter(
@@ -76,6 +77,7 @@ fun <T> RecyclerView.bind(
             adapter.updateData({ it.items }) {
                 it.updateCallback.invoke()
                 it.updateCallback = {}
+                updateCallback?.invoke()
             }
         }
         observe(owner)
