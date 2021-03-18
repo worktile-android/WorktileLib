@@ -127,16 +127,16 @@ class JsonDsl(private val autoDeserialize: Boolean = true) {
         }
 
         val result = kClass.primaryConstructor?.run {
-            val args = mutableListOf<Any>()
-            parameters.forEach { parameter ->
+            val args = mutableMapOf<KParameter, Any?>()
+            parameters.forEachIndexed { index, parameter ->
                 params.find { (property, _) ->
                     property.name == parameter.name
                 }?.also { (_, value) ->
-                    args.add(value)
+                    args[parameters[index]] = value
                 }
             }
             try {
-                call(*args.toTypedArray())
+                callBy(args)
             } catch (e: Exception) {
                 Log.e(TAG, e.message ?: "")
                 Log.e(TAG, "构造${kClass}对象需要的参数: $parameters, 但只提供了: $args")

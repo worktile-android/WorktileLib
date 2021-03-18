@@ -28,11 +28,6 @@ object Worktile {
                 super.onActivityResumed(activity)
                 topActivity = activity
             }
-
-            override fun onActivityDestroyed(activity: Activity) {
-                super.onActivityDestroyed(activity)
-                topActivity = null
-            }
         }
         application.registerActivityLifecycleCallbacks(contextRecorder)
     }
