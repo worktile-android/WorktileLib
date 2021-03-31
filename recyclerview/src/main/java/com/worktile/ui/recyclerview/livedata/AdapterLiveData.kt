@@ -17,6 +17,7 @@ class AdapterLiveData(
     }
 
     internal val observerWrapper = ObserverWrapper()
+    internal var pendingEdgeStateValue: AdapterLiveDataValue? = null
 
     internal fun internalPostValue(value: AdapterLiveDataValue) {
         postValue(value)
@@ -24,6 +25,13 @@ class AdapterLiveData(
 
     internal fun observe(owner: LifecycleOwner) {
         super.observe(owner, observerWrapper)
+    }
+
+    internal fun postPendingEdgeStateValue() {
+        pendingEdgeStateValue?.apply {
+            internalPostValue(this)
+        }
+        pendingEdgeStateValue = null
     }
 }
 

@@ -19,6 +19,9 @@ class ContentUpdatableData(
     }
 
     override fun update(value: MutableList<ItemDefinition>) {
-        defaultViewModel.adapterData.internalPostValue(AdapterLiveDataValue(value))
+        defaultViewModel.adapterData.apply {
+            postPendingEdgeStateValue()
+            internalPostValue(AdapterLiveDataValue(value))
+        }
     }
 }

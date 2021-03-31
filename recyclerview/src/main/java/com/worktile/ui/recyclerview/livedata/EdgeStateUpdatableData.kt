@@ -103,13 +103,12 @@ class EdgeStateUpdatableData(
             }
 
             EdgeState.SUCCESS -> {
-                defaultViewModel.adapterData.internalPostValue(
+                defaultViewModel.adapterData.pendingEdgeStateValue =
                     AdapterLiveDataValue(
                         mutableListOf<ItemDefinition>().apply {
                             addAll(value.currentData)
                         }
                     )
-                )
             }
 
             else -> {}
