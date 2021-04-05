@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="pageMargin">8dp</dimen>
-    <dimen name="peekOffset">8dp</dimen>
+    <dimen name="peekOffset">12dp</dimen>
 </resources>

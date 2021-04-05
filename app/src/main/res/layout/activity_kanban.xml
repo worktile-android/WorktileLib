@@ -6,7 +6,7 @@
         android:layout_height="match_parent">
 
     <com.worktile.ui.kanban.widget.Kanban
-            android:id="@+id/view_pager"
+            android:id="@+id/kanban"
             android:layout_width="0dp"
             android:layout_height="0dp"
             app:layout_constraintStart_toStartOf="parent"
