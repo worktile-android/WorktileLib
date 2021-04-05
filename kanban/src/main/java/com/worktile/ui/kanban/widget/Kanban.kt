@@ -1,14 +1,19 @@
 package com.worktile.ui.kanban.widget
 
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.PixelFormat
 import android.os.Build
-import android.os.Handler
 import android.util.AttributeSet
-import android.view.GestureDetector
-import android.view.MotionEvent
-import android.view.ViewGroup
+import android.view.*
+import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.view.animation.Animation
+import android.view.animation.RotateAnimation
 import android.widget.FrameLayout
+import android.widget.ImageView
 import androidx.annotation.RequiresApi
 import androidx.core.view.GestureDetectorCompat
 import androidx.core.view.get
@@ -17,6 +22,7 @@ import androidx.recyclerview.widget.SnapHelper
 import androidx.viewpager2.widget.ViewPager2
 import com.worktile.ui.R
 import com.worktile.ui.kanban.adapter.KanbanPagerAdapter
+
 
 class Kanban : FrameLayout {
     constructor(context: Context) : super(context) {
@@ -41,7 +47,7 @@ class Kanban : FrameLayout {
     var peekOffset = resources.getDimensionPixelOffset(R.dimen.peekOffset)
     var pagerAdapter: KanbanPagerAdapter? = null
         set(value) {
-            value?.kanbanGestureDetector = gestureDetector
+            value?.kanban = this
             field = value
             viewPager.adapter = value
         }
@@ -59,7 +65,35 @@ class Kanban : FrameLayout {
 
     private val gestureDetector = GestureDetectorCompat(context, GestureDetectorListener())
     private var onLongPressed = false
-    private var selectedItemViewHolder: RecyclerView.ViewHolder? = null
+    internal var selectedItemViewHolder: RecyclerView.ViewHolder? = null
+    private var longPressMotionEvent: MotionEvent? = null
+    // 当长按时，落点和itemView左上角的offset值
+    private var selectedLongPressOffsetX: Float = 0f
+    private var selectedLongPressOffsetY: Float = 0f
+
+    private val windowManager by lazy { context.getSystemService(Context.WINDOW_SERVICE) as WindowManager }
+    private val dragWindowParams by lazy {
+        WindowManager.LayoutParams().apply {
+            type = WindowManager.LayoutParams.TYPE_APPLICATION
+            flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
+            alpha = 1.0f
+            format = PixelFormat.TRANSLUCENT
+            width = WRAP_CONTENT
+            height = WRAP_CONTENT
+            gravity = Gravity.TOP or Gravity.START
+            x = 0
+            y = 0
+        }
+    }
+    private val dragView by lazy {
+        ImageView(context).apply {
+            setPadding(0, 0, 0, 0)
+            layoutParams = LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
+        }
+    }
 
     @SuppressLint("ClickableViewAccessibility")
     private fun init(context: Context, attributeSet: AttributeSet?) {
@@ -133,6 +167,11 @@ class Kanban : FrameLayout {
     private fun handleTouchEvent(event: MotionEvent?) {
         gestureDetector.onTouchEvent(event)
         when(event?.action) {
+            MotionEvent.ACTION_MOVE -> {
+                selectedItemViewHolder?.apply {
+                    translateItem(event, this)
+                }
+            }
             MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -> {
                 selectedItemViewHolder?.apply {
                     dropItem(event, this)
@@ -143,10 +182,55 @@ class Kanban : FrameLayout {
 
     private fun selectItem(event: MotionEvent, selected: RecyclerView.ViewHolder) {
         println("selectItem")
+        val selectedView = selected.itemView.apply {
+            longPressMotionEvent = event
+            val location = intArrayOf(0, 0)
+            getLocationOnScreen(location)
+            selectedLongPressOffsetX = event.rawX - location[0]
+            selectedLongPressOffsetY = event.rawY - location[1]
+        }
+        val selectedBitmap = selectedView.run {
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            draw(Canvas(bitmap))
+            bitmap
+        }
+        dragWindowParams.apply {
+            val itemLocation = intArrayOf(0, 0)
+            selected.itemView.getLocationOnScreen(itemLocation)
+            x = itemLocation[0]
+            y = itemLocation[1]
+        }
+        dragView.apply {
+            setImageBitmap(selectedBitmap)
+        }
+        windowManager.addView(dragView, dragWindowParams)
+        dragView.post { selectedView.visibility = View.INVISIBLE }
+        ValueAnimator.ofFloat(0f, 1f).apply {
+            addUpdateListener {
+                val value = it.animatedValue as Float
+                dragView.apply {
+                    rotation = 5 * value
+                    alpha = 1f - 0.2f * value
+                }
+            }
+            duration = 200
+            start()
+        }
+    }
+
+    private fun translateItem(event: MotionEvent, selected: RecyclerView.ViewHolder) {
+        dragWindowParams.apply {
+            x = (event.rawX - selectedLongPressOffsetX).toInt()
+            y = (event.rawY - selectedLongPressOffsetY).toInt()
+        }
+        windowManager.updateViewLayout(dragView, dragWindowParams)
     }
 
     private fun dropItem(event: MotionEvent, selected: RecyclerView.ViewHolder) {
         println("dropItem")
+        windowManager.removeView(dragView)
+        selectedItemViewHolder?.itemView?.visibility = View.VISIBLE
+        selectedItemViewHolder = null
     }
 
     private fun findContentRecyclerViewUnder(rawX: Float, rawY: Float): RecyclerView? {

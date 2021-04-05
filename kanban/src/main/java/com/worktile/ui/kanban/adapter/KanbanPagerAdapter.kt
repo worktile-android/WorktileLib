@@ -1,8 +1,10 @@
 package com.worktile.ui.kanban.adapter
 
 import android.annotation.SuppressLint
+import android.graphics.Canvas
 import android.view.GestureDetector
 import android.view.MotionEvent
+import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.GestureDetectorCompat
 import androidx.core.view.get
@@ -14,6 +16,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
+import com.worktile.ui.kanban.widget.Kanban
 
 abstract class KanbanPagerAdapter : FragmentStateAdapter {
     constructor(fragment: Fragment) : super(fragment)
@@ -21,25 +24,33 @@ abstract class KanbanPagerAdapter : FragmentStateAdapter {
     constructor(fragmentManager: FragmentManager, lifecycle: Lifecycle)
             : super(fragmentManager, lifecycle)
 
-    internal var kanbanGestureDetector: GestureDetectorCompat? = null
+    internal var kanban: Kanban? = null
 
     @SuppressLint("ClickableViewAccessibility")
     final override fun createFragment(position: Int): Fragment {
         val fragment = newFragment(position)
-//        fragment.viewLifecycleOwnerLiveData.observe(fragment) {
-//            if (it == null) return@observe
-//            fragment.view?.let { view ->
-//                if (view !is ViewGroup) return@let
-//                findRecyclerViewAndPerform(view) { recyclerView ->
-//                    recyclerView.apply {
-//                        setOnTouchListener { _, event ->
-//                            kanbanGestureDetector?.onTouchEvent(event)
-//                            onTouchEvent(event)
-//                        }
-//                    }
-//                }
-//            }
-//        }
+        fragment.viewLifecycleOwnerLiveData.observe(fragment) {
+            if (it == null) return@observe
+            fragment.view?.let { view ->
+                if (view !is ViewGroup) return@let
+                findRecyclerViewAndPerform(view) { recyclerView ->
+                    recyclerView.apply {
+                        addItemDecoration(object : RecyclerView.ItemDecoration() {
+                            override fun onDraw(
+                                c: Canvas,
+                                parent: RecyclerView,
+                                state: RecyclerView.State
+                            ) {
+                                super.onDraw(c, parent, state)
+                                kanban?.selectedItemViewHolder?.itemView?.apply {
+                                    visibility = View.INVISIBLE
+                                }
+                            }
+                        })
+                    }
+                }
+            }
+        }
         return fragment
     }
 
