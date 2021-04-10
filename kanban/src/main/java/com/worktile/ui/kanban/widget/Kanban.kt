@@ -3,6 +3,7 @@ package com.worktile.ui.kanban.widget
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.PixelFormat
@@ -10,18 +11,21 @@ import android.os.Build
 import android.util.AttributeSet
 import android.view.*
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-import android.view.animation.Animation
-import android.view.animation.RotateAnimation
+import android.view.animation.Interpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
 import androidx.annotation.RequiresApi
 import androidx.core.view.GestureDetectorCompat
+import androidx.core.view.ViewCompat
 import androidx.core.view.get
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SnapHelper
 import androidx.viewpager2.widget.ViewPager2
 import com.worktile.ui.R
 import com.worktile.ui.kanban.adapter.KanbanPagerAdapter
+import kotlin.math.abs
+import kotlin.math.sign
 
 
 class Kanban : FrameLayout {
@@ -44,6 +48,17 @@ class Kanban : FrameLayout {
         init(context, attributeSet)
     }
 
+    companion object {
+        private val dragScrollInterpolator = Interpolator { t ->
+            t * t * t * t * t
+        }
+        private val dragViewScrollCapInterpolator = Interpolator { input ->
+            val t = input - 1f
+            t * t * t * t * t + 1f
+        }
+        private val DRAG_SCROLL_ACCELERATION_LIMIT_TIME_MS = 2000L
+    }
+
     var peekOffset = resources.getDimensionPixelOffset(R.dimen.peekOffset)
     var pagerAdapter: KanbanPagerAdapter? = null
         set(value) {
@@ -64,12 +79,16 @@ class Kanban : FrameLayout {
     }
 
     private val gestureDetector = GestureDetectorCompat(context, GestureDetectorListener())
+    private var currentContentRecyclerView: RecyclerView? = null
     private var onLongPressed = false
     internal var selectedItemViewHolder: RecyclerView.ViewHolder? = null
-    private var longPressMotionEvent: MotionEvent? = null
+    private var selectedStartEvent: MotionEvent? = null
     // 当长按时，落点和itemView左上角的offset值
     private var selectedLongPressOffsetX: Float = 0f
     private var selectedLongPressOffsetY: Float = 0f
+    private var dragScrollStartTimeInMs = Long.MIN_VALUE
+    private var currentRawX: Float? = null
+    private var currentRawY: Float? = null
 
     private val windowManager by lazy { context.getSystemService(Context.WINDOW_SERVICE) as WindowManager }
     private val dragWindowParams by lazy {
@@ -94,6 +113,29 @@ class Kanban : FrameLayout {
             layoutParams = LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
         }
     }
+    private val maxScrollSpeed by lazy {
+        (20 * Resources.getSystem().displayMetrics.density).toInt()
+    }
+
+    private val viewPagerScrollRunnable = object : Runnable {
+        override fun run() {
+            if (selectedItemViewHolder != null && scrollIfNecessary(pagerRecyclerView)) {
+                pagerRecyclerView.removeCallbacks(this)
+                ViewCompat.postOnAnimation(pagerRecyclerView, this)
+            }
+        }
+    }
+    private val contentRecyclerViewScrollRunnable = object : Runnable {
+        override fun run() {
+            val contentRecyclerView = currentContentRecyclerView
+            if (contentRecyclerView != null &&
+                selectedItemViewHolder != null &&
+                scrollIfNecessary(contentRecyclerView)) {
+                contentRecyclerView.removeCallbacks(this)
+                ViewCompat.postOnAnimation(contentRecyclerView, this)
+            }
+        }
+    }
 
     @SuppressLint("ClickableViewAccessibility")
     private fun init(context: Context, attributeSet: AttributeSet?) {
@@ -115,8 +157,7 @@ class Kanban : FrameLayout {
         override fun onLongPress(e: MotionEvent?) {
             if (e == null) return
             onLongPressed = true
-            val contentRecyclerView = findContentRecyclerViewUnder(e.rawX, e.rawY)
-            contentRecyclerView?.apply {
+            currentContentRecyclerView?.apply {
                 val location = intArrayOf(0, 0)
                 getLocationOnScreen(location)
                 val itemView = findChildViewUnder(
@@ -125,6 +166,7 @@ class Kanban : FrameLayout {
                 )
                 selectedItemViewHolder = itemView?.run {
                     val viewHolder = getChildViewHolder(this)
+                    viewHolder.setIsRecyclable(false)
                     viewHolder
                 }
                 println("onLongPress")
@@ -146,7 +188,7 @@ class Kanban : FrameLayout {
             MotionEvent.ACTION_DOWN -> {
                 onLongPressed = false
                 selectedItemViewHolder = null
-                findContentRecyclerViewUnder(ev.rawX, ev.rawY)?.apply {
+                currentContentRecyclerView?.apply {
                     setOnTouchListener { _, event ->
                         gestureDetector.onTouchEvent(event)
                         onTouchEvent(event)
@@ -165,11 +207,22 @@ class Kanban : FrameLayout {
     }
 
     private fun handleTouchEvent(event: MotionEvent?) {
+        event?.apply {
+            currentContentRecyclerView = findContentRecyclerViewUnder(event.rawX, event.rawY)
+        }
         gestureDetector.onTouchEvent(event)
         when(event?.action) {
             MotionEvent.ACTION_MOVE -> {
+                currentRawX = event.rawX
+                currentRawY = event.rawY
                 selectedItemViewHolder?.apply {
                     translateItem(event, this)
+                    pagerRecyclerView.removeCallbacks(viewPagerScrollRunnable)
+                    viewPagerScrollRunnable.run()
+//                    currentContentRecyclerView?.apply {
+//                        removeCallbacks(contentRecyclerViewScrollRunnable)
+//                        contentRecyclerViewScrollRunnable.run()
+//                    }
                 }
             }
             MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -> {
@@ -182,8 +235,9 @@ class Kanban : FrameLayout {
 
     private fun selectItem(event: MotionEvent, selected: RecyclerView.ViewHolder) {
         println("selectItem")
+        dragScrollStartTimeInMs = Long.MIN_VALUE
         val selectedView = selected.itemView.apply {
-            longPressMotionEvent = event
+            selectedStartEvent = event
             val location = intArrayOf(0, 0)
             getLocationOnScreen(location)
             selectedLongPressOffsetX = event.rawX - location[0]
@@ -216,6 +270,7 @@ class Kanban : FrameLayout {
             duration = 200
             start()
         }
+        snapHelper?.attachToRecyclerView(null)
     }
 
     private fun translateItem(event: MotionEvent, selected: RecyclerView.ViewHolder) {
@@ -231,6 +286,134 @@ class Kanban : FrameLayout {
         windowManager.removeView(dragView)
         selectedItemViewHolder?.itemView?.visibility = View.VISIBLE
         selectedItemViewHolder = null
+        snapHelper?.attachToRecyclerView(pagerRecyclerView)
+    }
+
+    private fun scrollIfNecessary(
+        recyclerView: RecyclerView
+    ): Boolean {
+        val selected = selectedItemViewHolder ?: run {
+            dragScrollStartTimeInMs = Long.MIN_VALUE
+            return false
+        }
+        val now = System.currentTimeMillis()
+        val scrollDuration = if (dragScrollStartTimeInMs == Long.MIN_VALUE) {
+            0
+        } else {
+            now - dragScrollStartTimeInMs
+        }
+
+        val layoutManager = recyclerView.layoutManager ?: return false
+        val startEvent = this.selectedStartEvent ?: return false
+        val currentRawX = this.currentRawX ?: return false
+        val currentRawY = this.currentRawY ?: return false
+        val offsetX = selectedLongPressOffsetX
+        val offsetY = selectedLongPressOffsetY
+
+        println("offsetX: $offsetX")
+        println("offsetY: $offsetY")
+
+        val recyclerViewLocation = intArrayOf(0, 0)
+        recyclerView.getLocationOnScreen(recyclerViewLocation)
+        val xDiff = run {
+            if (layoutManager.canScrollHorizontally()) {
+                if (currentRawX < startEvent.rawX) {
+                    val itemLeft = (currentRawX - offsetX).run {
+                        if (this > 0) this else 0f
+                    }
+                    val leftDiff = currentRawX - itemLeft - recyclerView.paddingLeft -
+                            recyclerViewLocation[0]
+                    if (leftDiff < 0) {
+                        return@run leftDiff.toInt()
+                    }
+                } else {
+                    val itemRight = currentRawX + selected.itemView.width - offsetX
+                    val rightDiff = currentRawX + selected.itemView.width + itemRight -
+                            (recyclerView.width - recyclerView.paddingRight)
+                    if (rightDiff > 0) {
+                        return@run rightDiff.toInt()
+                    }
+                }
+            }
+            0
+        }
+        println("xDiff: $xDiff")
+        val yDiff = run {
+            if (layoutManager.canScrollVertically()) {
+                if (currentRawY < startEvent.rawY) {
+                    val itemTop = currentRawY - offsetY
+                    val topDiff = currentRawY - itemTop - recyclerView.paddingTop
+                    if (topDiff < 0) {
+                        return@run topDiff.toInt()
+                    }
+                } else {
+                    val itemBottom = currentRawY + selected.itemView.height - offsetY
+                    val bottomDiff = currentRawY + selected.itemView.height + itemBottom -
+                            (recyclerView.height - recyclerView.paddingBottom)
+                    if (bottomDiff > 0) {
+                        return@run bottomDiff.toInt()
+                    }
+                }
+            }
+            0
+        }
+        println("yDiff: $yDiff")
+
+        val scrollX = if (xDiff != 0) {
+            interpolateOutOfBoundsScroll(selected.itemView.width, xDiff, scrollDuration)
+        } else 0
+        val scrollY = if (yDiff != 0) {
+            interpolateOutOfBoundsScroll(selected.itemView.height, yDiff, scrollDuration)
+        } else 0
+        if (scrollX != 0 || scrollY != 0) {
+            if (dragScrollStartTimeInMs == Long.MIN_VALUE) {
+                dragScrollStartTimeInMs = now
+            }
+            recyclerView.scrollBy(scrollX, scrollY)
+            return true
+        }
+        dragScrollStartTimeInMs = Long.MIN_VALUE
+        return false
+    }
+
+    /**
+     * see [ItemTouchHelper.Callback.interpolateOutOfBoundsScroll]
+     */
+    private fun interpolateOutOfBoundsScroll(
+        viewSize: Int,
+        viewSizeOutOfBounds: Int,
+        msSinceStartScroll: Long
+    ): Int {
+        val absOutOfBounds = abs(viewSizeOutOfBounds)
+        val direction = sign(viewSizeOutOfBounds.toFloat()).toInt()
+        // might be negative if other direction
+        val outOfBoundsRatio = 1f.coerceAtMost(1f * absOutOfBounds / viewSize)
+        val cappedScroll = direction * maxScrollSpeed *
+                dragViewScrollCapInterpolator.getInterpolation(outOfBoundsRatio)
+        val timeRatio: Float = if (msSinceStartScroll > DRAG_SCROLL_ACCELERATION_LIMIT_TIME_MS) {
+            1f
+        } else {
+            msSinceStartScroll.toFloat() / DRAG_SCROLL_ACCELERATION_LIMIT_TIME_MS
+        }
+        val value = (cappedScroll * dragScrollInterpolator.getInterpolation(timeRatio)).toInt()
+        return if (value == 0) {
+            if (viewSizeOutOfBounds > 0) 1 else -1
+        } else value
+    }
+
+    private fun moveIfNecessary(event: MotionEvent, selected: RecyclerView.ViewHolder) {
+        val contentRecyclerView = findContentRecyclerViewUnder(event.rawX, event.rawY)
+        if (contentRecyclerView?.isLayoutRequested == true) {
+            return
+        }
+
+        val startEvent = selectedStartEvent ?: return
+        val threshold = 0.5f
+        if (abs(event.rawY - startEvent.rawY) < selected.itemView.height * threshold) {
+            return
+        }
+
+
     }
 
     private fun findContentRecyclerViewUnder(rawX: Float, rawY: Float): RecyclerView? {
