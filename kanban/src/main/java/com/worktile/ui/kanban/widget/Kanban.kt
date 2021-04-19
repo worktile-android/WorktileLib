@@ -56,7 +56,7 @@ class Kanban : FrameLayout {
             val t = input - 1f
             t * t * t * t * t + 1f
         }
-        private val DRAG_SCROLL_ACCELERATION_LIMIT_TIME_MS = 2000L
+        private const val DRAG_SCROLL_ACCELERATION_LIMIT_TIME_MS = 2000L
     }
 
     var peekOffset = resources.getDimensionPixelOffset(R.dimen.peekOffset)
@@ -86,7 +86,7 @@ class Kanban : FrameLayout {
     // 当长按时，落点和itemView左上角的offset值
     private var selectedLongPressOffsetX: Float = 0f
     private var selectedLongPressOffsetY: Float = 0f
-    private var dragScrollStartTimeInMs = Long.MIN_VALUE
+    private val dragScrollStartTimeInMsMap = HashMap<RecyclerView, Long>()
     private var currentRawX: Float? = null
     private var currentRawY: Float? = null
 
@@ -219,10 +219,10 @@ class Kanban : FrameLayout {
                     translateItem(event, this)
                     pagerRecyclerView.removeCallbacks(viewPagerScrollRunnable)
                     viewPagerScrollRunnable.run()
-//                    currentContentRecyclerView?.apply {
-//                        removeCallbacks(contentRecyclerViewScrollRunnable)
-//                        contentRecyclerViewScrollRunnable.run()
-//                    }
+                    currentContentRecyclerView?.apply {
+                        removeCallbacks(contentRecyclerViewScrollRunnable)
+                        contentRecyclerViewScrollRunnable.run()
+                    }
                 }
             }
             MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -> {
@@ -235,7 +235,7 @@ class Kanban : FrameLayout {
 
     private fun selectItem(event: MotionEvent, selected: RecyclerView.ViewHolder) {
         println("selectItem")
-        dragScrollStartTimeInMs = Long.MIN_VALUE
+        dragScrollStartTimeInMsMap.clear()
         val selectedView = selected.itemView.apply {
             selectedStartEvent = event
             val location = intArrayOf(0, 0)
@@ -293,11 +293,12 @@ class Kanban : FrameLayout {
         recyclerView: RecyclerView
     ): Boolean {
         val selected = selectedItemViewHolder ?: run {
-            dragScrollStartTimeInMs = Long.MIN_VALUE
+            dragScrollStartTimeInMsMap.remove(recyclerView)
             return false
         }
         val now = System.currentTimeMillis()
-        val scrollDuration = if (dragScrollStartTimeInMs == Long.MIN_VALUE) {
+        val dragScrollStartTimeInMs = dragScrollStartTimeInMsMap[recyclerView]
+        val scrollDuration = if (dragScrollStartTimeInMs == null) {
             0
         } else {
             now - dragScrollStartTimeInMs
@@ -318,18 +319,26 @@ class Kanban : FrameLayout {
         val xDiff = run {
             if (layoutManager.canScrollHorizontally()) {
                 if (currentRawX < startEvent.rawX) {
-                    val itemLeft = (currentRawX - offsetX).run {
-                        if (this > 0) this else 0f
+                    val itemLeft = currentRawX - offsetX + selected.itemView.paddingLeft
+                    val paddingLeft = if (recyclerView == pagerRecyclerView) {
+                        0
+                    } else {
+                        recyclerView.paddingLeft
                     }
-                    val leftDiff = currentRawX - itemLeft - recyclerView.paddingLeft -
-                            recyclerViewLocation[0]
+                    val leftDiff = itemLeft - recyclerViewLocation[0] - paddingLeft
                     if (leftDiff < 0) {
                         return@run leftDiff.toInt()
                     }
                 } else {
-                    val itemRight = currentRawX + selected.itemView.width - offsetX
-                    val rightDiff = currentRawX + selected.itemView.width + itemRight -
-                            (recyclerView.width - recyclerView.paddingRight)
+                    val itemRight = currentRawX + selected.itemView.width - offsetX -
+                            selected.itemView.paddingRight
+                    val paddingRight = if (recyclerView == pagerRecyclerView) {
+                        0
+                    } else {
+                        recyclerView.paddingRight
+                    }
+                    val rightDiff = itemRight - recyclerViewLocation[0] - recyclerView.width +
+                            paddingRight
                     if (rightDiff > 0) {
                         return@run rightDiff.toInt()
                     }
@@ -342,14 +351,14 @@ class Kanban : FrameLayout {
             if (layoutManager.canScrollVertically()) {
                 if (currentRawY < startEvent.rawY) {
                     val itemTop = currentRawY - offsetY
-                    val topDiff = currentRawY - itemTop - recyclerView.paddingTop
+                    val topDiff = itemTop - recyclerViewLocation[1] - recyclerView.paddingTop
                     if (topDiff < 0) {
                         return@run topDiff.toInt()
                     }
                 } else {
                     val itemBottom = currentRawY + selected.itemView.height - offsetY
-                    val bottomDiff = currentRawY + selected.itemView.height + itemBottom -
-                            (recyclerView.height - recyclerView.paddingBottom)
+                    val bottomDiff = itemBottom - recyclerViewLocation[1] - recyclerView.height +
+                            recyclerView.paddingBottom
                     if (bottomDiff > 0) {
                         return@run bottomDiff.toInt()
                     }
@@ -366,13 +375,13 @@ class Kanban : FrameLayout {
             interpolateOutOfBoundsScroll(selected.itemView.height, yDiff, scrollDuration)
         } else 0
         if (scrollX != 0 || scrollY != 0) {
-            if (dragScrollStartTimeInMs == Long.MIN_VALUE) {
-                dragScrollStartTimeInMs = now
+            if (dragScrollStartTimeInMs == null) {
+                dragScrollStartTimeInMsMap[recyclerView] = now
             }
             recyclerView.scrollBy(scrollX, scrollY)
             return true
         }
-        dragScrollStartTimeInMs = Long.MIN_VALUE
+        dragScrollStartTimeInMsMap.remove(recyclerView)
         return false
     }
 
