@@ -268,6 +268,20 @@ class Operation(val data: ParserData) {
         }
     }
 
+    fun AlterResult.foreach(block: Parser.() -> Unit) {
+        var key: String? = null
+        alterKeys.forEach { alterKey ->
+            if (data.jsonObject.has(alterKey)) {
+                key = alterKey
+            }
+        }
+        key?.apply {
+            foreach(block)
+        } ?: run {
+            Log.w(TAG, "提供的可选key ${alterKeys}都不存在")
+        }
+    }
+
     private fun parseJsonArray(
         jsonArray: JSONArray,
         block: Parser.() -> Unit

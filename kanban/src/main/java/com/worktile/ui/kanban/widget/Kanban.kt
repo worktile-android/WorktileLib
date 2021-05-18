@@ -17,6 +17,7 @@ import android.widget.ImageView
 import androidx.annotation.RequiresApi
 import androidx.core.view.GestureDetectorCompat
 import androidx.core.view.ViewCompat
+import androidx.core.view.ViewConfigurationCompat
 import androidx.core.view.get
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
@@ -24,6 +25,7 @@ import androidx.recyclerview.widget.SnapHelper
 import androidx.viewpager2.widget.ViewPager2
 import com.worktile.ui.R
 import com.worktile.ui.kanban.adapter.KanbanPagerAdapter
+import java.util.*
 import kotlin.math.abs
 import kotlin.math.sign
 
@@ -59,7 +61,7 @@ class Kanban : FrameLayout {
         private const val DRAG_SCROLL_ACCELERATION_LIMIT_TIME_MS = 2000L
     }
 
-    var peekOffset = resources.getDimensionPixelOffset(R.dimen.peekOffset)
+    private var peekOffset = 0
     var pagerAdapter: KanbanPagerAdapter? = null
         set(value) {
             value?.kanban = this
@@ -86,9 +88,12 @@ class Kanban : FrameLayout {
     // 当长按时，落点和itemView左上角的offset值
     private var selectedLongPressOffsetX: Float = 0f
     private var selectedLongPressOffsetY: Float = 0f
-    private val dragScrollStartTimeInMsMap = HashMap<RecyclerView, Long>()
+    private val dragScrollStartTimeInMsMap = WeakHashMap<RecyclerView, Long>()
     private var currentRawX: Float? = null
     private var currentRawY: Float? = null
+    private var lastTouchContentRecyclerView: RecyclerView? = null
+    private val swapTargetsMap = WeakHashMap<RecyclerView, MutableList<RecyclerView.ViewHolder>>()
+    private val distancesMap = WeakHashMap<RecyclerView, MutableList<Int>>()
 
     private val windowManager by lazy { context.getSystemService(Context.WINDOW_SERVICE) as WindowManager }
     private val dragWindowParams by lazy {
@@ -139,6 +144,12 @@ class Kanban : FrameLayout {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun init(context: Context, attributeSet: AttributeSet?) {
+        val typedArray = context.obtainStyledAttributes(attributeSet, R.styleable.Kanban)
+        peekOffset = typedArray.getDimensionPixelOffset(
+            R.styleable.Kanban_pagePeekOffset,
+            resources.getDimensionPixelOffset(R.dimen.peekOffset)
+        )
+        typedArray.recycle()
         viewPager.apply {
             offscreenPageLimit = 1
         }
@@ -311,9 +322,6 @@ class Kanban : FrameLayout {
         val offsetX = selectedLongPressOffsetX
         val offsetY = selectedLongPressOffsetY
 
-        println("offsetX: $offsetX")
-        println("offsetY: $offsetY")
-
         val recyclerViewLocation = intArrayOf(0, 0)
         recyclerView.getLocationOnScreen(recyclerViewLocation)
         val xDiff = run {
@@ -346,7 +354,7 @@ class Kanban : FrameLayout {
             }
             0
         }
-        println("xDiff: $xDiff")
+
         val yDiff = run {
             if (layoutManager.canScrollVertically()) {
                 if (currentRawY < startEvent.rawY) {
@@ -366,7 +374,6 @@ class Kanban : FrameLayout {
             }
             0
         }
-        println("yDiff: $yDiff")
 
         val scrollX = if (xDiff != 0) {
             interpolateOutOfBoundsScroll(selected.itemView.width, xDiff, scrollDuration)
@@ -412,15 +419,17 @@ class Kanban : FrameLayout {
 
     private fun moveIfNecessary(event: MotionEvent, selected: RecyclerView.ViewHolder) {
         val contentRecyclerView = findContentRecyclerViewUnder(event.rawX, event.rawY)
+        if (lastTouchContentRecyclerView != null && contentRecyclerView == null) {
+            // 移出last
+        } else if (lastTouchContentRecyclerView == null && contentRecyclerView != null) {
+            // 移入现在的contentRecyclerView
+        }
+        lastTouchContentRecyclerView = contentRecyclerView
+
         if (contentRecyclerView?.isLayoutRequested == true) {
             return
         }
 
-        val startEvent = selectedStartEvent ?: return
-        val threshold = 0.5f
-        if (abs(event.rawY - startEvent.rawY) < selected.itemView.height * threshold) {
-            return
-        }
 
 
     }

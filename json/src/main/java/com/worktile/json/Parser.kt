@@ -314,6 +314,10 @@ class Parser(data: ParserData) {
         operation.run { foreach(block) }
     }
 
+    operator fun AlterResult.get(block: Parser.() -> Unit) {
+        operation.run { foreach(block) }
+    }
+
     inline operator fun <reified T> String.get(block: Parser.(t: T) -> Unit) {
 
     }
