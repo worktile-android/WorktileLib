@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <declare-styleable name="CircleProgressWithText">
+        <attr name="cp_backgroundColor" format="color"/>
+        <attr name="cp_progressColor" format="color"/>
+        <attr name="cp_textColor" format="color"/>
+        <attr name="cp_textSize" format="dimension"/>
+    </declare-styleable>
+    <declare-styleable name="HorizontalProgressBar" tools:ignore="ResourceName">
+        <!-- 背景色 -->
+        <attr name="hp_backgroundColor" format="color"/>
+        <!-- 进度色 -->
+        <attr name="hp_progressColor" format="color"/>
+        <!-- 是否允许动画 -->
+        <attr name="hp_allowAnim" format="boolean"/>
+        <!-- 圆角大小，默认为 height/2 -->
+        <attr name="hp_circular" format="dimension"/>
+    </declare-styleable>
+</resources>

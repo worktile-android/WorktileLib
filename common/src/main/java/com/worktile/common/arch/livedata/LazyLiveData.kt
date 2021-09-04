@@ -48,6 +48,12 @@ open class LazyLiveData<T> : LiveData<T> {
         super.observeForever(getObserverDecoration(observer))
     }
 
+    fun innerRemoveObserver(observer: Observer<in T>) {
+        observerWrapperMap[observer]?.apply {
+            super.removeObserver(getObserverDecoration(observer))
+            observerWrapperMap.remove(observer)
+        }
+    }
 //    override fun removeObserver(observer: Observer<in T>) {
 //        super.removeObserver(observer)
 //        observerWrapperMap.remove(observer)

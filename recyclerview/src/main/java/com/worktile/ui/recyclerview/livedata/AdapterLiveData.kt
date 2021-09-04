@@ -27,6 +27,10 @@ class AdapterLiveData(
         super.observe(owner, observerWrapper)
     }
 
+    internal fun removeObserve() {
+        innerRemoveObserver(observerWrapper)
+    }
+
     internal fun postPendingEdgeStateValue() {
         pendingEdgeStateValue?.apply {
             internalPostValue(this)

@@ -14,6 +14,7 @@ infix fun LoadingStateUpdatableData.set(state: LoadingState) {
             withContext(Dispatchers.Default) {
                 (viewModel?.recyclerViewData?.value ?: emptyList()).also {
                     synchronized(it) {
+                        println("rvv, update(state)")
                         update(state)
                     }
                 }

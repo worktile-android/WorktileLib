@@ -55,8 +55,10 @@ class LoadingStateUpdatableData(
 
     override fun update(value: LoadingState) {
         if (value != currentState) {
+            println("rvv, value != currentState")
             when (value) {
                 LoadingState.LOADING -> {
+                    println("rvv, post loadingState")
                     defaultViewModel.adapterData.internalPostValue(
                         AdapterLiveDataValue(mutableListOf(loadingItemViewModel))
                     )

@@ -73,6 +73,7 @@ fun <T> RecyclerView.bind(
     setAdapter(adapter)
 
     viewModel.adapterData.run {
+        removeObserve()
         observerWrapper.realObserver = Observer {
             adapter.updateData({ it.items }) {
                 it.updateCallback.invoke()

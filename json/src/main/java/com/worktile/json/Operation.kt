@@ -23,9 +23,6 @@ private class DirectReturnTemp<T> {
     var value: T? = null
 }
 
-private val intoBlockTemp = IntoBlockTemp()
-private val directReturnTemp = DirectReturnTemp<Any>()
-
 class Operation(val data: ParserData) {
 
     fun <T> String.into(property: KMutableProperty0<T>, tkClass: KClass<*>): IntoResult<T> {
@@ -121,7 +118,7 @@ class Operation(val data: ParserData) {
     }
 
     fun String.intoBlock(block: (Any?) -> Unit) {
-        intoBlockTemp.apply {
+        IntoBlockTemp().apply {
             value = null
             into(::value, Any::class)
             block.invoke(value)
@@ -130,15 +127,16 @@ class Operation(val data: ParserData) {
 
     fun <T> String.directReturn(tkClass: KClass<*>): T? {
         val keys = split('.')
-        directReturnTemp.value = null
-        directReturnSplitBlock<T>(0, keys, tkClass).invoke(Operation(data))
-        return directReturnTemp.value as? T
+        val directReturnTemp = DirectReturnTemp<T>()
+        directReturnSplitBlock(0, keys, tkClass, directReturnTemp).invoke(Operation(data))
+        return directReturnTemp.value
     }
 
     private fun <T> directReturnSplitBlock(
         index: Int,
         keys: List<String>,
-        tkClass: KClass<*>
+        tkClass: KClass<*>,
+        directReturnTemp: DirectReturnTemp<T>
     ): (Operation) -> Unit {
         return if (index == keys.size - 1) {
             {
@@ -153,7 +151,7 @@ class Operation(val data: ParserData) {
             {
                 it.apply {
                     keys[index].then {
-                        directReturnSplitBlock<T>(index + 1, keys, tkClass)
+                        directReturnSplitBlock(index + 1, keys, tkClass, directReturnTemp)
                             .invoke(operation)
                     }
                 }

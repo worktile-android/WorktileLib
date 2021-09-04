@@ -98,10 +98,10 @@ def configPublish(Project project, group, _artifact, ver) {
 }
 
 ext {
-    common_version = "0.0.9.21030519-SNAPSHOT"
-    widgets_version = "0.0.1"
-    recyclerview_version = "0.9.7.21033103-SNAPSHOT"
-    json_version = "0.2.1.21042218-SNAPSHOT"
+    common_version = "0.0.9.21082302-SNAPSHOT"
+    widgets_version = "0.0.1.21062800-SNAPSHOT"
+    recyclerview_version = "0.9.7.21082305-SNAPSHOT"
+    json_version = "0.2.1.21062703-SNAPSHOT"
     kanban_version = "0.0.1.21042300-SNAPSHOT"
     wt_common = "com.worktile:common:$common_version" as GStringImpl
     wt_widgets = "com.worktile.ui:widgets:$widgets_version" as GStringImpl

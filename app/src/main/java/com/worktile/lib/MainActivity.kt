@@ -10,6 +10,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.GridLayoutManager
 import com.worktile.common.default
 import com.worktile.json.JsonDsl
 import com.worktile.json.Parser
@@ -33,7 +34,16 @@ class MainActivity : AppCompatActivity() {
         val viewModel = ViewModelProvider(this, ViewModelProvider.NewInstanceFactory()).get(
             MainActivityViewModel::class.java
         )
-        recycler_view.bind(viewModel, this)
+        recycler_view.apply {
+            bind(viewModel, this@MainActivity)
+            layoutManager = GridLayoutManager(this@MainActivity, 2).apply {
+                spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+                    override fun getSpanSize(position: Int): Int {
+                        return viewModel.getSpanSize(position)
+                    }
+                }
+            }
+        }
 
         val json = JSONObject("{\n" +
                 "    \"user\": {\n" +
@@ -75,6 +85,7 @@ class MainActivity : AppCompatActivity() {
 class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
     private val originData = arrayOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ,"16", "17", "18", "11", "101","9", "10" ,"16", "17", "18", "11", "101",
         "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ,"16", "17", "18", "11", "101","9", "10" ,"16", "17", "18", "11", "101")
+    private var spanSizeTwo = false
 
     init {
         recyclerViewData.value?.add(object : Test2ItemViewModel {
@@ -95,10 +106,19 @@ class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
 
     }
 
+    fun getSpanSize(position: Int): Int {
+        return if (position == 0 && spanSizeTwo) {
+            return 2
+        } else {
+            1
+        }
+    }
+
 
     fun updateData() {
         (recyclerViewData.value?.get(0) as? Test2ItemViewModel)?.title =
             "2333=${System.currentTimeMillis()}"
+        spanSizeTwo = !spanSizeTwo
         recyclerViewData.notifyChanged()
 //        recyclerViewData.value?.add(5, object : TestItemViewModel {
 //            override val title = MutableLiveData("5678")
