@@ -42,7 +42,7 @@ infix fun EdgeStateUpdatableData.set(state: EdgeState) {
     }
 }
 
-fun ContentUpdatableData.notifyChanged() {
+fun ContentUpdatableData.notifyChanged(keepEdgeState: Boolean = false) {
     synchronized(defaultViewModel) {
         runBlocking {
             withContext(Dispatchers.Default) {
@@ -50,7 +50,7 @@ fun ContentUpdatableData.notifyChanged() {
                     synchronized(it) {
                         update(mutableListOf<ItemDefinition>().apply {
                             addAll(it)
-                        })
+                        }, keepEdgeState)
                     }
                 }
             }

@@ -8,15 +8,15 @@ const val TAG = "RecyclerView"
 fun RecyclerView.executeAfterAllAnimationsAreFinished(
     callback: () -> Unit
 ) {
-    lateinit var waitForAnimationsToFinishRunnable: Runnable
-    waitForAnimationsToFinishRunnable = Runnable {
-        if (isAnimating) {
-            itemAnimator?.isRunning {
-                Handler().post(waitForAnimationsToFinishRunnable)
+    Handler().post(object: Runnable {
+        override fun run() {
+            if (isAnimating) {
+                itemAnimator?.isRunning {
+                    Handler().post(this)
+                }
+                return
             }
-            return@Runnable
+            callback.invoke()
         }
-        callback.invoke()
-    }
-    Handler().post(waitForAnimationsToFinishRunnable)
+    })
 }

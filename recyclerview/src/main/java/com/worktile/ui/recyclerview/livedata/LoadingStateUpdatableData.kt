@@ -14,7 +14,7 @@ import kotlinx.android.synthetic.main.item_empty.view.*
 class LoadingStateUpdatableData(
     internal val defaultViewModel: RecyclerViewViewModel
 ) : UpdatableData<LoadingState>() {
-    private var currentState = LoadingState.INIT
+    var currentState = LoadingState.INIT
     private var config: Config? = null
 
     override fun onFirstInitialization(viewModel: RecyclerViewViewModel, config: Config) {
@@ -53,7 +53,7 @@ class LoadingStateUpdatableData(
         }
     }
 
-    override fun update(value: LoadingState) {
+    fun update(value: LoadingState) {
         if (value != currentState) {
             println("rvv, value != currentState")
             when (value) {

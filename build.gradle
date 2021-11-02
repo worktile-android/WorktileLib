@@ -14,7 +14,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:4.0.2'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.5.30"
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -100,7 +100,7 @@ def configPublish(Project project, group, _artifact, ver) {
 ext {
     common_version = "0.0.9.21082302-SNAPSHOT"
     widgets_version = "0.0.1.21062800-SNAPSHOT"
-    recyclerview_version = "0.9.7.21082305-SNAPSHOT"
+    recyclerview_version = "0.9.7.21101500-SNAPSHOT"
     json_version = "0.2.1.21062703-SNAPSHOT"
     kanban_version = "0.0.1.21042300-SNAPSHOT"
     wt_common = "com.worktile:common:$common_version" as GStringImpl
@@ -111,7 +111,7 @@ ext {
     configPublish = this.&configPublish as MethodClosure
     kotlin_stdlib_jdk7 = "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version" as GStringImpl
     kotlin_reflect = "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version" as GStringImpl
-    kotlinx_coroutines_core = "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.9"
+    kotlinx_coroutines_core = "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2"
     appcompact = "androidx.appcompat:appcompat:1.2.0"
     core_ktx = "androidx.core:core-ktx:1.3.1"
     acticity_ktx = "androidx.activity:activity-ktx:1.1.0"

@@ -29,19 +29,19 @@ class EdgeStateUpdatableData(
 
     var state = EdgeState.INIT
 
-    private val loadingItemViewViewModel = EdgeItemViewModel(
+    internal val loadingItemViewViewModel = EdgeItemViewModel(
         EdgeState.LOADING,
         { config?.footerLoadingViewCreator },
         R.layout.item_footer_loading
     )
 
-    private val noMoreItemViewModel = EdgeItemViewModel(
+    internal val noMoreItemViewModel = EdgeItemViewModel(
         EdgeState.NO_MORE,
         { config?.footerNoMoreViewCreator },
         R.layout.item_footer_no_more
     )
 
-    private val failItemViewModel = object : EdgeItemViewModel(
+    internal val failItemViewModel = object : EdgeItemViewModel(
         EdgeState.FAILED,
         { config?.footerFailureViewCreator },
         R.layout.item_footer_failed
@@ -60,7 +60,7 @@ class EdgeStateUpdatableData(
         }
     }
 
-    override fun update(value: EdgeStateData) {
+    fun update(value: EdgeStateData) {
         state = value.state
         when (value.state) {
             EdgeState.LOADING -> {
@@ -115,7 +115,7 @@ class EdgeStateUpdatableData(
         }
     }
 
-    private open inner class EdgeItemViewModel(
+    internal open class EdgeItemViewModel(
         key: EdgeState,
         private val getCreator: () -> ViewCreator?,
         private val layoutId: Int

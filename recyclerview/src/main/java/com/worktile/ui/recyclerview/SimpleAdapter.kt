@@ -63,6 +63,14 @@ class SimpleAdapter<T>(
         this.recyclerView = recyclerView
     }
 
+    override fun onViewAttachedToWindow(holder: ItemViewHolder) {
+        super.onViewAttachedToWindow(holder)
+    }
+
+    override fun onViewDetachedFromWindow(holder: ItemViewHolder) {
+        super.onViewDetachedFromWindow(holder)
+    }
+
     fun updateData(prepareNewData: () -> List<T>, debugKey: String? = null, updateCallback: (() -> Unit)? = null) {
         diffThreadExecutor.execute {
             runBlocking {

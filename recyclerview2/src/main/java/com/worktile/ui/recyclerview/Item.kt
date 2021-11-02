@@ -1,22 +1,46 @@
 package com.worktile.ui.recyclerview
 
 import android.view.View
+import android.view.ViewGroup
+import androidx.core.view.forEachIndexed
 import androidx.lifecycle.LiveData
+import androidx.recyclerview.widget.RecyclerView
 import com.worktile.common.Default
 import java.lang.reflect.Field
 import java.util.*
 
+typealias ViewCreator = (parent: ViewGroup) -> View
+
 interface ItemBinder {
     fun viewCreator(): ViewCreator
     fun bind(itemView: View)
+    fun recycle(itemView: View) { }
     fun type(): Any = this::class
-    fun onAttach() { }
-    fun onDetach() { }
 }
 
 interface ItemViewModel {
     fun key(): Any
     fun content(): Array<ContentItem<*>>?
+}
+
+abstract class StateBinder : ItemBinder {
+    var recyclerView: RecyclerView? = null
+
+    fun itemView(): View? {
+        return recyclerView?.run {
+            (adapter as? SimpleAdapter<*>)?.run {
+                val index = data.run data@{
+                    forEachIndexed { index: Int, item: ItemViewModel ->
+                        if (item == this@StateBinder) {
+                            return@data index
+                        }
+                    }
+                    -1
+                }
+                findViewHolderForAdapterPosition(index)?.itemView
+            }
+        }
+    }
 }
 
 fun interface ContentItemComparator<T> {

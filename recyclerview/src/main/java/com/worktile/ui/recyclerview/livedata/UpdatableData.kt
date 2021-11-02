@@ -21,6 +21,5 @@ abstract class UpdatableData<T> {
 
     internal abstract fun onFirstInitialization(viewModel: RecyclerViewViewModel, config: Config)
     internal abstract fun onEachInitialization(viewModel: RecyclerViewViewModel, config: Config)
-    abstract fun update(value: T)
 }
 
