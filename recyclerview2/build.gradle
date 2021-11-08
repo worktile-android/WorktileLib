@@ -1,13 +1,16 @@
 plugins {
     id 'com.android.library'
     id 'kotlin-android'
+    id 'maven-publish'
 }
+
+// com.worktile.ui:recyclerview:version
 
 android {
     compileSdkVersion 30
 
     defaultConfig {
-        minSdkVersion 21
+        minSdkVersion 19
         targetSdkVersion 30
         versionCode 1
         versionName "1.0"
@@ -36,7 +39,9 @@ android {
 dependencies {
     implementation core_ktx
     implementation appcompact
+    implementation constraintlayout
     implementation kotlinx_coroutines_core
+    implementation lifecycle_runtime_ktx
     api recyclerview
 
     debugApi project(path: ':common')
@@ -49,3 +54,5 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
     testImplementation kotlinx_coroutines_core
 }
+
+configPublish.call(project, 'com.worktile.ui', 'recyclerview2', recyclerview2_version)

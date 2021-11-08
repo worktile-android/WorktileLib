@@ -3,17 +3,21 @@ package com.worktile.ui.recyclerview.data
 import androidx.lifecycle.LiveData
 import com.worktile.ui.recyclerview.InnerViewModel
 import com.worktile.ui.recyclerview.ItemDefinition
+import com.worktile.ui.recyclerview.ItemGroup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import java.util.concurrent.CopyOnWriteArrayList
 
 class RecyclerViewData : ArrayList<ItemDefinition>() {
-    internal var innerViewModel: InnerViewModel? = null
+    val itemGroups = mutableListOf<ItemGroup>()
+    private var innerViewModel: InnerViewModel? = null
 
-    @Synchronized
+    internal fun setInnerViewModel(innerViewModel: InnerViewModel) {
+        this.innerViewModel = innerViewModel
+    }
+
     fun notifyChanged() {
-        innerViewModel?.adapterData?.value = mutableListOf<ItemDefinition>().apply {
-            addAll(this@RecyclerViewData)
-        }
+        innerViewModel?.updateAdapterData()
     }
 }

@@ -16,17 +16,18 @@ import com.worktile.json.JsonDsl
 import com.worktile.json.Parser
 import com.worktile.json.ParserData
 import com.worktile.ui.recyclerview.*
-import com.worktile.ui.recyclerview.binder.bind
-import com.worktile.ui.recyclerview.LoadingState
-import com.worktile.ui.recyclerview.livedata.extension.notifyChanged
-import com.worktile.ui.recyclerview.livedata.extension.set
-import com.worktile.ui.recyclerview.viewmodels.RecyclerViewViewModel
+import com.worktile.ui.recyclerview.data.EdgeState
+import com.worktile.ui.recyclerview.data.LoadingState
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import org.json.JSONObject
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
+    private val stateFlow = MutableStateFlow("0")
+
     @ExperimentalStdlibApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,23 +37,6 @@ class MainActivity : AppCompatActivity() {
         )
         recycler_view.apply {
             bind(viewModel, this@MainActivity)
-            layoutManager = GridLayoutManager(this@MainActivity, 2).apply {
-                spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-                    override fun getSpanSize(position: Int): Int {
-                        return viewModel.getSpanSize(position)
-                    }
-                }
-            }
-        }
-
-        val json = JSONObject("{\n" +
-                "    \"user\": {\n" +
-                "        \"name\": \"hhhh\"\n" +
-                "    }\n" +
-                "}")
-        Parser(ParserData(JsonDsl(), json)).apply {
-            val name = "user.name"<String>()
-            println("name: $name")
         }
 
         button.setOnClickListener {
@@ -80,6 +64,18 @@ class MainActivity : AppCompatActivity() {
             viewModel.footerSuccess()
         }
     }
+
+    private suspend fun check(version: String) {
+        println("check version: $version")
+        withContext(Dispatchers.Default) {
+            println("check version: $version, Coroutine 1")
+            delay(500)
+        }
+        withContext(Dispatchers.Main) {
+            println("check version: $version, Coroutine 2")
+            delay(500)
+        }
+    }
 }
 
 class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
@@ -88,37 +84,33 @@ class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
     private var spanSizeTwo = false
 
     init {
-        recyclerViewData.value?.add(object : Test2ItemViewModel {
-            override var title = "0000000"
-            override val list = emptyList<String>()
-            override fun key() = "1111111"
-        })
+        val itemGroup = ItemGroup()
+        itemGroup.setTitle(
+            object : Test2ItemViewModel {
+                override var title = "0000000"
+                override val list = emptyList<String>()
+                override fun key() = "1111111"
+            }
+        )
 
-        originData.forEach {
-            recyclerViewData.value?.add(object : TestItemViewModel {
-                private val key = UUID.randomUUID()
-                override val title = MutableLiveData(it)
-                override fun key() = key
-            })
-        }
+        itemGroup.setItems(mutableListOf<ItemDefinition>().apply {
+            originData.forEach {
+                add(object : TestItemViewModel {
+                    private val key = UUID.randomUUID()
+                    override val title = MutableLiveData(it)
+                    override fun key() = key
+                })
+            }
+        })
+        recyclerViewData.itemGroups.add(itemGroup)
         recyclerViewData.notifyChanged()
 //        loadingState set LoadingState.LOADING
 
     }
 
-    fun getSpanSize(position: Int): Int {
-        return if (position == 0 && spanSizeTwo) {
-            return 2
-        } else {
-            1
-        }
-    }
-
-
     fun updateData() {
-        (recyclerViewData.value?.get(0) as? Test2ItemViewModel)?.title =
+        (recyclerViewData.get(0) as? Test2ItemViewModel)?.title =
             "2333=${System.currentTimeMillis()}"
-        spanSizeTwo = !spanSizeTwo
         recyclerViewData.notifyChanged()
 //        recyclerViewData.value?.add(5, object : TestItemViewModel {
 //            override val title = MutableLiveData("5678")
@@ -141,37 +133,37 @@ class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
     }
 
     fun footerLoading() {
-        edgeState set EdgeState.LOADING
+        footerState set EdgeState.LOADING
     }
 
     fun footerNoMore() {
-        edgeState set EdgeState.NO_MORE
+        footerState set EdgeState.NO_MORE
     }
 
     fun footerFailed() {
-        edgeState set EdgeState.FAILED
+        footerState set EdgeState.FAILED
     }
 
     fun footerSuccess() {
-        edgeState set EdgeState.SUCCESS
+        footerState set EdgeState.SUCCESS
     }
 
-    override val onLoadMore = {
-        edgeState set EdgeState.LOADING
+    override val onEdgeLoadMore = {
+        footerState set EdgeState.LOADING
         GlobalScope.launch {
             withContext(Dispatchers.IO) { delay(1000) }
-            edgeState set EdgeState.FAILED
+            footerState set EdgeState.FAILED
         }
         Unit
     }
 
-    override val onLoadMoreRetry = {
+    override val onEdgeLoadMoreRetry = {
         GlobalScope.launch {
             withContext(Dispatchers.Default) { delay(1000) }
-            println("current data size: ${recyclerViewData.value?.size}")
+            println("current data size: ${recyclerViewData.size}")
 
             originData.forEach {
-                recyclerViewData.value?.add(object : Test2ItemViewModel {
+                recyclerViewData.add(object : Test2ItemViewModel {
                     private val key = UUID.randomUUID()
                     override val list = emptyList<String>()
                     override var title = it
@@ -179,8 +171,7 @@ class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
                 })
             }
             recyclerViewData.notifyChanged()
-
-            edgeState set EdgeState.SUCCESS
+            footerState set EdgeState.SUCCESS
         }
         Unit
     }

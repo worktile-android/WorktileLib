@@ -1,19 +1,27 @@
 package com.worktile.ui.recyclerview.data
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
-import com.worktile.ui.recyclerview.Config
-import com.worktile.ui.recyclerview.LoadingStateItemViewModel
-import com.worktile.ui.recyclerview.R
-import com.worktile.ui.recyclerview.RecyclerViewViewModel
+import com.worktile.ui.recyclerview.*
+import com.worktile.ui.recyclerview.InnerViewModel
 import com.worktile.ui.recyclerview.databinding.ItemEmptyBinding
 
-class LoadingStateData {
-    internal var state: LoadingState = LoadingState.INIT
-    internal var config: Config? = null
-    internal var viewModel: RecyclerViewViewModel? = null
+internal abstract class LoadingStateItemViewModel(
+    private val key: Any
+) : DiffItemViewModel, ItemDefinition {
+    override fun key(): Any = key
+    override fun type() = key()
+    override fun bind(itemView: View) {}
+}
 
-    private val loadingItemViewModel = object : LoadingStateItemViewModel(LoadingState.LOADING) {
+class LoadingStateData {
+    var state: LoadingState = LoadingState.SUCCESS
+        private set
+    internal var config: Config? = null
+    internal var onLoadFailedRetry: (() -> Unit)? = null
+
+    internal val loadingItemViewModel = object : LoadingStateItemViewModel(LoadingState.LOADING) {
         override fun viewCreator() = config?.loadingViewCreator ?: { parent: ViewGroup ->
             LayoutInflater
                 .from(parent.context)
@@ -38,18 +46,25 @@ class LoadingStateData {
                     val itemBinding = ItemEmptyBinding.bind(this)
                     itemBinding.emptyHint.text = context.getString(R.string.retry_hint)
                     setOnClickListener {
-                        viewModel?.run {
-                            if (onLoadFailedRetry != null) {
-                                loadingState set LoadingState.LOADING
-                                onLoadFailedRetry?.invoke()
-                            }
+                        if (onLoadFailedRetry != null) {
+                            set(LoadingState.LOADING)
+                            onLoadFailedRetry?.invoke()
                         }
                     }
             }
         }
     }
 
-    infix fun set(newState: LoadingState) {
+    private var innerViewModel: InnerViewModel? = null
 
+    internal fun setInnerViewModel(innerViewModel: InnerViewModel) {
+        this.innerViewModel = innerViewModel
+    }
+
+    infix fun set(newState: LoadingState) {
+        if (newState != state) {
+            state = newState
+            innerViewModel?.updateAdapterData()
+        }
     }
 }

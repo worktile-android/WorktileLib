@@ -7,17 +7,17 @@ import android.view.ViewGroup
 import androidx.lifecycle.*
 import androidx.recyclerview.widget.*
 import kotlinx.coroutines.*
-import java.util.concurrent.Executors
 
 class SimpleAdapter<T>(
     var data: List<T>,
-    lifecycleOwner: LifecycleOwner
-) : RecyclerView.Adapter<SimpleAdapter.ItemViewHolder>(), LifecycleObserver where T : ItemViewModel, T : ItemBinder {
+    private val log: Boolean = false
+) : RecyclerView.Adapter<SimpleAdapter.ItemViewHolder<T>>(), LifecycleObserver where T : ItemViewModel, T : ItemBinder {
     private val typeToAdapterTypeMap = hashMapOf<Any, Int>()
-    private val adapterTypeToViewCreatorMap = hashMapOf<Int, ViewCreator>()
+    private val adapterTypeToItemDataMap = hashMapOf<Int, T>()
     private var typeIndex = 0
     private var contentSparseArray = SparseArray<Array<ContentItem<*>>?>()
     private var recyclerView: RecyclerView? = null
+    private val oldData = mutableListOf<T>()
 
     override fun getItemViewType(position: Int): Int {
         val itemData = data[position]
@@ -26,20 +26,22 @@ class SimpleAdapter<T>(
         } ?: run {
             val adapterType = typeIndex
             typeToAdapterTypeMap[itemData.type()] = adapterType
-            adapterTypeToViewCreatorMap[adapterType] = itemData.viewCreator()
+            adapterTypeToItemDataMap[adapterType] = itemData
             typeIndex++
             return adapterType
         }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder {
-        val viewCreator = adapterTypeToViewCreatorMap[viewType]!!
-        return ItemViewHolder(viewCreator.invoke(parent))
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder<T> {
+        val itemData = adapterTypeToItemDataMap[viewType]!!
+        return ItemViewHolder(itemData, parent)
     }
 
-    override fun onBindViewHolder(holder: ItemViewHolder, position: Int) {
-        contentSparseArray.put(position, data[position].content())
-        data[position].bind(holder.itemView)
+    override fun onBindViewHolder(holder: ItemViewHolder<T>, position: Int) {
+        data[position].apply {
+            contentSparseArray.put(position, content())
+            bind(holder.itemView)
+        }
     }
 
     override fun getItemCount(): Int {
@@ -49,36 +51,37 @@ class SimpleAdapter<T>(
     override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
         super.onAttachedToRecyclerView(recyclerView)
         this.recyclerView = recyclerView
-        data.forEach { item ->
-            (item as? StateBinder)?.apply {
-                this.recyclerView = recyclerView
-            }
-        }
     }
 
-    override fun onViewRecycled(holder: ItemViewHolder) {
+    override fun onViewAttachedToWindow(holder: ItemViewHolder<T>) {
+        super.onViewAttachedToWindow(holder)
+        holder.itemData.attach(holder.itemView)
+    }
+
+    override fun onViewDetachedFromWindow(holder: ItemViewHolder<T>) {
+        super.onViewDetachedFromWindow(holder)
+        holder.itemData.detach(holder.itemView)
+    }
+
+    override fun onViewRecycled(holder: ItemViewHolder<T>) {
         super.onViewRecycled(holder)
-        data[holder.adapterPosition].recycle(holder.itemView)
+        holder.itemData.recycle(holder.itemView)
     }
 
     suspend fun updateData(newData: List<T>, debugKey: String? = null, updateCallback: (() -> Unit)? = null) {
         val diffResult = withContext(Dispatchers.Default) {
-            val oldData = data
-            newData.apply {
-                forEach { item ->
-                    (item as? StateBinder)?.apply {
-                        this.recyclerView = this@SimpleAdapter.recyclerView
-                    }
-                }
+            oldData.apply {
+                clear()
+                addAll(data)
             }
-            if (BuildConfig.DEBUG) {
+            if (BuildConfig.DEBUG && log) {
                 Log.d(TAG, "calculateDiff, debugKey = $debugKey" +
                         ", thread = { id: ${Thread.currentThread().id}, name: ${Thread.currentThread().name}}")
             }
             DiffUtil.calculateDiff(object : DiffUtil.Callback() {
                 override fun getOldListSize(): Int {
                     val size = oldData.size
-                    if (BuildConfig.DEBUG) {
+                    if (BuildConfig.DEBUG && log) {
                         Log.d(TAG, "oldDataSize: $size")
                     }
                     return size
@@ -86,7 +89,7 @@ class SimpleAdapter<T>(
 
                 override fun getNewListSize(): Int {
                     val size = newData.size
-                    if (BuildConfig.DEBUG) {
+                    if (BuildConfig.DEBUG && log) {
                         Log.d(TAG, "newDataSize: $size")
                     }
                     return size
@@ -98,7 +101,7 @@ class SimpleAdapter<T>(
                 ): Boolean {
                     val oldKey = oldData[oldItemPosition].key()
                     val newKey = newData[newItemPosition].key()
-                    if (BuildConfig.DEBUG) {
+                    if (BuildConfig.DEBUG && log) {
                         Log.d(TAG, "oldKey: $oldKey, newKey: $newKey")
                     }
                     return oldKey == newKey
@@ -115,7 +118,7 @@ class SimpleAdapter<T>(
                     }
                     val newContent = newData[newItemPosition].content()
                     if (oldContent == null || newContent == null) {
-                        if (BuildConfig.DEBUG) {
+                        if (BuildConfig.DEBUG && log) {
                             Log.d(
                                 TAG, "content are not same," +
                                         " oldContent: ${oldContent}, newContent: $newContent"
@@ -124,7 +127,7 @@ class SimpleAdapter<T>(
                         return false
                     }
                     if (oldContent.size != newContent.size) {
-                        if (BuildConfig.DEBUG) {
+                        if (BuildConfig.DEBUG && log) {
                             Log.d(
                                 TAG, "content sizes are not equals," +
                                         " old: ${oldContent.size}, new: ${newContent.size}"
@@ -139,7 +142,7 @@ class SimpleAdapter<T>(
                             return@forEachIndexed
                         }
                         if (oldContentItem.value == null || newContentItem.value == null) {
-                            if (BuildConfig.DEBUG) {
+                            if (BuildConfig.DEBUG && log) {
                                 Log.d(
                                     TAG, "content are not same" +
                                             ", old: ${oldContentItem.value}" +
@@ -149,7 +152,7 @@ class SimpleAdapter<T>(
                             return false
                         }
                         if (oldContentItem.value::class != newContentItem.value::class) {
-                            if (BuildConfig.DEBUG) {
+                            if (BuildConfig.DEBUG && log) {
                                 Log.d(
                                     TAG, "content are not same" +
                                             ", old class: ${oldContentItem.value::class}" +
@@ -176,7 +179,7 @@ class SimpleAdapter<T>(
                             } else {
                                 val result = oldComparatorResult && newComparatorResult
                                 if (result) return@forEachIndexed else {
-                                    if (BuildConfig.DEBUG) {
+                                    if (BuildConfig.DEBUG && log) {
                                         Log.d(
                                             TAG, "content are not same" +
                                                     ", old: ${oldContentItem.value}" +
@@ -190,7 +193,7 @@ class SimpleAdapter<T>(
                         } else if (oldComparatorResult == null && newComparatorResult == null) {
                             val result = oldContentItem.value == newContentItem.value
                             if (result) return@forEachIndexed else {
-                                if (BuildConfig.DEBUG) {
+                                if (BuildConfig.DEBUG && log) {
                                     Log.d(
                                         TAG, "content are not same" +
                                                 ", old: ${oldContentItem.value}" +
@@ -204,7 +207,7 @@ class SimpleAdapter<T>(
                             val result =
                                 (oldComparatorResult ?: true) && (newComparatorResult ?: true)
                             if (result) return@forEachIndexed else {
-                                if (BuildConfig.DEBUG) {
+                                if (BuildConfig.DEBUG && log) {
                                     Log.d(
                                         TAG, "content are not same" +
                                                 ", old: ${oldContentItem.value}" +
@@ -256,5 +259,9 @@ class SimpleAdapter<T>(
         }
     }
 
-    class ItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
+    class ItemViewHolder<T>(
+        val itemData: T,
+        parent: ViewGroup
+    ) : RecyclerView.ViewHolder(itemData.viewCreator().invoke(parent))
+            where T : ItemViewModel, T : ItemBinder
 }

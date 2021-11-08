@@ -14,6 +14,8 @@ typealias ViewCreator = (parent: ViewGroup) -> View
 interface ItemBinder {
     fun viewCreator(): ViewCreator
     fun bind(itemView: View)
+    fun attach(itemView: View) { }
+    fun detach(itemView: View) { }
     fun recycle(itemView: View) { }
     fun type(): Any = this::class
 }
@@ -21,26 +23,6 @@ interface ItemBinder {
 interface ItemViewModel {
     fun key(): Any
     fun content(): Array<ContentItem<*>>?
-}
-
-abstract class StateBinder : ItemBinder {
-    var recyclerView: RecyclerView? = null
-
-    fun itemView(): View? {
-        return recyclerView?.run {
-            (adapter as? SimpleAdapter<*>)?.run {
-                val index = data.run data@{
-                    forEachIndexed { index: Int, item: ItemViewModel ->
-                        if (item == this@StateBinder) {
-                            return@data index
-                        }
-                    }
-                    -1
-                }
-                findViewHolderForAdapterPosition(index)?.itemView
-            }
-        }
-    }
 }
 
 fun interface ContentItemComparator<T> {
