@@ -103,7 +103,7 @@ ext {
     recyclerview_version = "0.9.7.21101500-SNAPSHOT"
     recyclerview2_version = "0.9.7.21110821-SNAPSHOT"
     json_version = "0.2.1.21062703-SNAPSHOT"
-    kanban_version = "0.0.1.21042300-SNAPSHOT"
+    kanban_version = "0.0.1.21110918-SNAPSHOT"
     wt_common = "com.worktile:common:$common_version" as GStringImpl
     wt_widgets = "com.worktile.ui:widgets:$widgets_version" as GStringImpl
     wt_recyclerview = "com.worktile.ui:recyclerview:$recyclerview_version" as GStringImpl

@@ -9,6 +9,7 @@ import android.graphics.Canvas
 import android.graphics.PixelFormat
 import android.os.Build
 import android.util.AttributeSet
+import android.util.TypedValue
 import android.view.*
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.view.animation.Interpolator
@@ -17,9 +18,9 @@ import android.widget.ImageView
 import androidx.annotation.RequiresApi
 import androidx.core.view.GestureDetectorCompat
 import androidx.core.view.ViewCompat
-import androidx.core.view.ViewConfigurationCompat
 import androidx.core.view.get
 import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SnapHelper
 import androidx.viewpager2.widget.ViewPager2
@@ -154,8 +155,6 @@ class Kanban : FrameLayout {
             offscreenPageLimit = 1
         }
         pagerRecyclerView.apply {
-            setPadding(peekOffset, 0, peekOffset, 0)
-            clipToPadding = false
             setOnTouchListener { _, event ->
                 gestureDetector.onTouchEvent(event)
                 onTouchEvent(event)
@@ -186,6 +185,63 @@ class Kanban : FrameLayout {
                 selectItem(e, this)
             }
         }
+    }
+
+    private inner class PaddingScrollListener : RecyclerView.OnScrollListener() {
+        var rightPadding = peekOffset
+
+        override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+            super.onScrolled(recyclerView, dx, dy)
+            val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: return
+            val pagerAdapter = this@Kanban.pagerAdapter ?: return
+            val lastPosition = layoutManager.findLastVisibleItemPosition()
+            recyclerView.apply {
+                if (lastPosition >= pagerAdapter.itemCount - 2) {
+                    setPadding(rightPadding, 0, peekOffset, 0)
+                } else {
+                    setPadding(peekOffset, 0, rightPadding, 0)
+                }
+            }
+        }
+    }
+    private val paddingScrollListener = PaddingScrollListener()
+    private var kanbanWidth = 0
+        set(value) {
+            if (value != field) {
+                field = value
+                val maxBoardWidth = TypedValue.applyDimension(
+                    TypedValue.COMPLEX_UNIT_DIP,
+                    400f,
+                    resources.displayMetrics
+                )
+                if (value - 2 * peekOffset > maxBoardWidth) {
+                    val rightPadding = value - peekOffset - maxBoardWidth
+                    paddingScrollListener.rightPadding = rightPadding.toInt()
+                    pagerRecyclerView.apply {
+                        clipToPadding = false
+                        setPadding(peekOffset, 0, rightPadding.toInt(), 0)
+                        removeOnScrollListener(paddingScrollListener)
+                        addOnScrollListener(paddingScrollListener)
+                    }
+                    snapHelper?.attachToRecyclerView(null)
+                } else {
+                    pagerRecyclerView.apply {
+                        clipToPadding = false
+                        setPadding(peekOffset, 0, peekOffset, 0)
+                        snapHelper?.attachToRecyclerView(this)
+                    }
+                }
+            }
+        }
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val widthMode = MeasureSpec.getMode(widthMeasureSpec)
+        val width = MeasureSpec.getSize(widthMeasureSpec)
+        if (widthMode == MeasureSpec.AT_MOST) {
+            throw Exception("kanban宽度不支持设置为wrap_content")
+        }
+        kanbanWidth = width
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
     }
 
     /**

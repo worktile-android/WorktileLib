@@ -17,6 +17,7 @@ import com.worktile.common.default
 import com.worktile.ui.kanban.adapter.KanbanPagerAdapter
 import com.worktile.ui.recyclerview.ItemDefinition
 import com.worktile.ui.recyclerview.DiffItemViewModel
+import com.worktile.ui.recyclerview.RecyclerViewViewModel
 import com.worktile.ui.recyclerview.ViewCreator
 //import com.worktile.ui.recyclerview.binder.bind
 //import com.worktile.ui.recyclerview.livedata.extension.notifyChanged
@@ -50,9 +51,9 @@ class PageFragment : Fragment(R.layout.fragment_kanban_page) {
     internal var position: Int = 0
     internal var color: Int = Color.RED
 
-//    private val viewModel: PageFragmentViewModel by lazy {
-//        ViewModelProvider(requireActivity()).get("$position", PageFragmentViewModel::class.java)
-//    }
+    private val viewModel: PageFragmentViewModel by lazy {
+        ViewModelProvider(requireActivity()).get("$position", PageFragmentViewModel::class.java)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -71,21 +72,21 @@ class PageFragment : Fragment(R.layout.fragment_kanban_page) {
     }
 }
 
-//class PageFragmentViewModel : RecyclerViewViewModel by default(), ViewModel() {
-//    private val data = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ,"16", "17", "18", "11", "101",
-//        "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ,"16", "17", "18", "11", "101")
-//
-//    init {
-//        recyclerViewData.value?.run {
-//            data.forEach { s ->
-//                add(object : Item, DiffItemViewModel by default() {
-//                    override val text = s
-//                })
-//            }
-//        }
-//        recyclerViewData.notifyChanged()
-//    }
-//}
+class PageFragmentViewModel : RecyclerViewViewModel by default(), ViewModel() {
+    private val data = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ,"16", "17", "18", "11", "101",
+        "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ,"16", "17", "18", "11", "101")
+
+    init {
+        recyclerViewData.run {
+            data.forEach { s ->
+                add(object : Item, DiffItemViewModel by default() {
+                    override val text = s
+                })
+            }
+        }
+        recyclerViewData.notifyChanged()
+    }
+}
 
 interface Item : ItemDefinition {
     val text: String
