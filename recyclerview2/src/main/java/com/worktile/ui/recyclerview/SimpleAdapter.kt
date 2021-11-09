@@ -34,7 +34,7 @@ class SimpleAdapter<T>(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder<T> {
         val itemData = adapterTypeToItemDataMap[viewType]!!
-        return ItemViewHolder(itemData, parent)
+        return ItemViewHolder(itemData.viewCreator().invoke(parent))
     }
 
     override fun onBindViewHolder(holder: ItemViewHolder<T>, position: Int) {
@@ -55,17 +55,17 @@ class SimpleAdapter<T>(
 
     override fun onViewAttachedToWindow(holder: ItemViewHolder<T>) {
         super.onViewAttachedToWindow(holder)
-        holder.itemData.attach(holder.itemView)
+        holder.itemData?.attach(holder.itemView)
     }
 
     override fun onViewDetachedFromWindow(holder: ItemViewHolder<T>) {
         super.onViewDetachedFromWindow(holder)
-        holder.itemData.detach(holder.itemView)
+        holder.itemData?.detach(holder.itemView)
     }
 
     override fun onViewRecycled(holder: ItemViewHolder<T>) {
         super.onViewRecycled(holder)
-        holder.itemData.recycle(holder.itemView)
+        holder.itemData?.recycle(holder.itemView)
     }
 
     suspend fun updateData(newData: List<T>, debugKey: String? = null, updateCallback: (() -> Unit)? = null) {
@@ -260,8 +260,10 @@ class SimpleAdapter<T>(
     }
 
     class ItemViewHolder<T>(
-        val itemData: T,
-        parent: ViewGroup
-    ) : RecyclerView.ViewHolder(itemData.viewCreator().invoke(parent))
-            where T : ItemViewModel, T : ItemBinder
+        itemView: View
+    ) : RecyclerView.ViewHolder(itemView) where T : ItemViewModel, T : ItemBinder {
+        // 因为viewHolder可能会复用，因此这里记下最后一次绑定的itemData，以便在detach或者recycle的时候调用该
+        // itemData的detach()或recycle()方法
+        var itemData: T? = null
+    }
 }

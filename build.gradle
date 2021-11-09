@@ -101,7 +101,7 @@ ext {
     common_version = "0.0.9.21082302-SNAPSHOT"
     widgets_version = "0.0.1.21062800-SNAPSHOT"
     recyclerview_version = "0.9.7.21101500-SNAPSHOT"
-    recyclerview2_version = "0.9.7.21110821-SNAPSHOT"
+    recyclerview2_version = "0.9.7.21110923-SNAPSHOT"
     json_version = "0.2.1.21062703-SNAPSHOT"
     kanban_version = "0.0.1.21110918-SNAPSHOT"
     wt_common = "com.worktile:common:$common_version" as GStringImpl
