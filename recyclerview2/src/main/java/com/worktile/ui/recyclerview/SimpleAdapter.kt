@@ -40,6 +40,7 @@ class SimpleAdapter<T>(
     override fun onBindViewHolder(holder: ItemViewHolder<T>, position: Int) {
         data[position].apply {
             contentSparseArray.put(position, content())
+            holder.itemData = this
             bind(holder.itemView)
         }
     }
