@@ -8,9 +8,9 @@ apply plugin: 'maven-publish'
 buildscript {
     ext.kotlin_version = '1.4.10'
     repositories {
-        maven { url 'https://maven.mokimatrix.com/repository/jcenter-proxy' }
-        maven { url 'https://maven.mokimatrix.com/repository/maven-central' }
-        maven { url 'https://maven.mokimatrix.com/repository/google-proxy' }
+        maven { url 'https://maven.worktile-android.com/repository/jcenter-proxy' }
+        maven { url 'https://maven.worktile-android.com/repository/maven-central' }
+        maven { url 'https://maven.worktile-android.com/repository/google-proxy' }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:4.0.2'
@@ -23,11 +23,11 @@ buildscript {
 
 allprojects {
     repositories {
-        maven { url 'https://maven.mokimatrix.com/repository/jcenter-proxy' }
-        maven { url 'https://maven.mokimatrix.com/repository/maven-central' }
-        maven { url 'https://maven.mokimatrix.com/repository/worktile' }
-        maven { url 'https://maven.mokimatrix.com/repository/debug' }
-        maven { url 'https://maven.mokimatrix.com/repository/google-proxy' }
+        maven { url 'https://maven.worktile-android.com/repository/jcenter-proxy' }
+        maven { url 'https://maven.worktile-android.com/repository/maven-central' }
+        maven { url 'https://maven.worktile-android.com/repository/worktile' }
+        maven { url 'https://maven.worktile-android.com/repository/debug' }
+        maven { url 'https://maven.worktile-android.com/repository/google-proxy' }
     }
 }
 
@@ -77,7 +77,7 @@ def configPublish(Project project, group, _artifact, ver) {
             repositories {
                 maven {
                     name "worktile"
-                    url "https://maven.mokimatrix.com/repository/worktile/"
+                    url "https://maven.worktile-android.com/repository/worktile/"
                     credentials {
                         it.username = MAVEN_USERNAME
                         it.password = MAVEN_PASSWORD
@@ -86,7 +86,7 @@ def configPublish(Project project, group, _artifact, ver) {
 
                 maven {
                     name "debug"
-                    url "https://maven.mokimatrix.com/repository/debug/"
+                    url "https://maven.worktile-android.com/repository/debug/"
                     credentials {
                         it.username = MAVEN_USERNAME
                         it.password = MAVEN_PASSWORD
@@ -98,10 +98,10 @@ def configPublish(Project project, group, _artifact, ver) {
 }
 
 ext {
-    common_version = "0.0.9.21082302-SNAPSHOT"
+    common_version = "0.0.9.22011118-SNAPSHOT"
     widgets_version = "0.0.1.21062800-SNAPSHOT"
     recyclerview_version = "0.9.7.21101500-SNAPSHOT"
-    recyclerview2_version = "0.9.7.21110923-SNAPSHOT"
+    recyclerview2_version = "0.9.7.22010701-SNAPSHOT"
     json_version = "0.2.1.21062703-SNAPSHOT"
     kanban_version = "0.0.1.21110918-SNAPSHOT"
     wt_common = "com.worktile:common:$common_version" as GStringImpl
