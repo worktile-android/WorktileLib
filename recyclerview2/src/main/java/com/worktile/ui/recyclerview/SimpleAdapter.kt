@@ -8,16 +8,18 @@ import androidx.lifecycle.*
 import androidx.recyclerview.widget.*
 import kotlinx.coroutines.*
 
-class SimpleAdapter<T>(
-    var data: List<T>,
+internal val updateCallbacks = mutableMapOf<String/*key*/, () -> Unit>()
+
+class SimpleAdapter(
+    var data: List<ItemDefinition>,
     private val log: Boolean = false
-) : RecyclerView.Adapter<SimpleAdapter.ItemViewHolder<T>>(), LifecycleObserver where T : ItemViewModel, T : ItemBinder {
+) : RecyclerView.Adapter<SimpleAdapter.ItemViewHolder>(), LifecycleObserver {
     private val typeToAdapterTypeMap = hashMapOf<Any, Int>()
-    private val adapterTypeToItemDataMap = hashMapOf<Int, T>()
+    private val adapterTypeToItemDataMap = hashMapOf<Int, ItemDefinition>()
     private var typeIndex = 0
     private var contentSparseArray = SparseArray<Array<ContentItem<*>>?>()
     private var recyclerView: RecyclerView? = null
-    private val oldData = mutableListOf<T>()
+    private val oldData = mutableListOf<ItemDefinition>()
 
     override fun getItemViewType(position: Int): Int {
         val itemData = data[position]
@@ -32,12 +34,12 @@ class SimpleAdapter<T>(
         }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder<T> {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder {
         val itemData = adapterTypeToItemDataMap[viewType]!!
         return ItemViewHolder(itemData.viewCreator().invoke(parent))
     }
 
-    override fun onBindViewHolder(holder: ItemViewHolder<T>, position: Int) {
+    override fun onBindViewHolder(holder: ItemViewHolder, position: Int) {
         data[position].apply {
             contentSparseArray.put(position, content())
             holder.itemData = this
@@ -54,22 +56,22 @@ class SimpleAdapter<T>(
         this.recyclerView = recyclerView
     }
 
-    override fun onViewAttachedToWindow(holder: ItemViewHolder<T>) {
+    override fun onViewAttachedToWindow(holder: ItemViewHolder) {
         super.onViewAttachedToWindow(holder)
         holder.itemData?.attach(holder.itemView)
     }
 
-    override fun onViewDetachedFromWindow(holder: ItemViewHolder<T>) {
+    override fun onViewDetachedFromWindow(holder: ItemViewHolder) {
         super.onViewDetachedFromWindow(holder)
         holder.itemData?.detach(holder.itemView)
     }
 
-    override fun onViewRecycled(holder: ItemViewHolder<T>) {
+    override fun onViewRecycled(holder: ItemViewHolder) {
         super.onViewRecycled(holder)
         holder.itemData?.recycle(holder.itemView)
     }
 
-    suspend fun updateData(newData: List<T>, debugKey: String? = null, updateCallback: (() -> Unit)? = null) {
+    suspend fun updateData(newData: List<ItemDefinition>, debugKey: String? = null, updateCallback: (() -> Unit)? = null) {
         val diffResult = withContext(Dispatchers.Default) {
             oldData.apply {
                 clear()
@@ -256,15 +258,21 @@ class SimpleAdapter<T>(
                 }
 
             })
+            if (newData is AlwaysNotEqualList) {
+                newData.key?.apply {
+                    updateCallbacks[this]?.invoke()
+                    updateCallbacks.remove(this)
+                }
+            }
             updateCallback?.invoke()
         }
     }
 
-    class ItemViewHolder<T>(
+    class ItemViewHolder(
         itemView: View
-    ) : RecyclerView.ViewHolder(itemView) where T : ItemViewModel, T : ItemBinder {
+    ) : RecyclerView.ViewHolder(itemView) {
         // 因为viewHolder可能会复用，因此这里记下最后一次绑定的itemData，以便在detach或者recycle的时候调用该
         // itemData的detach()或recycle()方法
-        var itemData: T? = null
+        var itemData: ItemDefinition? = null
     }
 }

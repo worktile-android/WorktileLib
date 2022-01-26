@@ -37,31 +37,83 @@ class MainActivity : AppCompatActivity() {
         )
         recycler_view.apply {
             bind(viewModel, this@MainActivity)
+            setOnEdgeLoadMore {
+                setEdgeState(EdgeState.LOADING)
+                GlobalScope.launch {
+                    withContext(Dispatchers.IO) { delay(1000) }
+                    setEdgeState(EdgeState.FAILED)
+                }
+            }
+//            setOnEdgeLoadMoreRetry {
+//                GlobalScope.launch {
+//                    withContext(Dispatchers.Default) { delay(1000) }
+//                    println("current data size: ${data.size}")
+//
+//                    originData.forEach {
+//                        data.add(object : Test2ItemViewModel {
+//                            private val key = UUID.randomUUID()
+//                            override val list = emptyList<String>()
+//                            override var title = it
+//                            override fun key() = key
+//                        })
+//                    }
+//                    notifyChanged()
+//                    setEdgeState(EdgeState.SUCCESS)
+//                }
+//            }
+        }
+
+        viewModel.originData.observe(this) { originData ->
+            recycler_view.apply {
+                val itemGroup = ItemGroup()
+                itemGroup.setTitle(
+                    object : Test2ItemViewModel {
+                        override var title = "0000000"
+                        override val list = emptyList<String>()
+                        override fun key() = "1111111"
+                    }
+                )
+
+                itemGroup.setItems(mutableListOf<ItemDefinition>().apply {
+                    originData.forEach {
+                        add(object : TestItemViewModel {
+                            private val key = UUID.randomUUID()
+                            override val title = MutableLiveData(it)
+                            override fun key() = key
+                        })
+                    }
+                })
+                data.itemGroups.add(itemGroup)
+                notifyChanged()
+            }
         }
 
         button.setOnClickListener {
-            viewModel.updateData()
+            recycler_view.apply {
+                (data[0] as? Test2ItemViewModel)?.title = "2333=${System.currentTimeMillis()}"
+                notifyChanged()
+            }
         }
         loading.setOnClickListener {
-            viewModel.loading()
+            recycler_view.setLoadingState(LoadingState.LOADING)
         }
         empty.setOnClickListener {
-            viewModel.empty()
+            recycler_view.setLoadingState(LoadingState.EMPTY)
         }
         failed.setOnClickListener {
-            viewModel.failed()
+            recycler_view.setLoadingState(LoadingState.FAILED)
         }
         footer_loading.setOnClickListener {
-            viewModel.footerLoading()
+            recycler_view.setEdgeState(EdgeState.LOADING)
         }
         footer_no_more.setOnClickListener {
-            viewModel.footerNoMore()
+            recycler_view.setEdgeState(EdgeState.NO_MORE)
         }
         footer_failed.setOnClickListener {
-            viewModel.footerFailed()
+            recycler_view.setEdgeState(EdgeState.FAILED)
         }
         footer_success.setOnClickListener {
-            viewModel.footerSuccess()
+            recycler_view.setEdgeState(EdgeState.SUCCESS)
         }
     }
 
@@ -79,105 +131,17 @@ class MainActivity : AppCompatActivity() {
 }
 
 class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
-    private val originData = arrayOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ,"16", "17", "18", "11", "101","9", "10" ,"16", "17", "18", "11", "101",
-        "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ,"16", "17", "18", "11", "101","9", "10" ,"16", "17", "18", "11", "101")
-    private var spanSizeTwo = false
+    val originData = MutableLiveData(arrayOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ,"16", "17", "18", "11", "101","9", "10" ,"16", "17", "18", "11", "101",
+        "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ,"16", "17", "18", "11", "101","9", "10" ,"16", "17", "18", "11", "101"))
 
     init {
-        val itemGroup = ItemGroup()
-        itemGroup.setTitle(
-            object : Test2ItemViewModel {
-                override var title = "0000000"
-                override val list = emptyList<String>()
-                override fun key() = "1111111"
-            }
-        )
 
-        itemGroup.setItems(mutableListOf<ItemDefinition>().apply {
-            originData.forEach {
-                add(object : TestItemViewModel {
-                    private val key = UUID.randomUUID()
-                    override val title = MutableLiveData(it)
-                    override fun key() = key
-                })
-            }
-        })
-        recyclerViewData.itemGroups.add(itemGroup)
-        recyclerViewData.notifyChanged()
 //        loadingState set LoadingState.LOADING
 
     }
-
-    fun updateData() {
-        (recyclerViewData.get(0) as? Test2ItemViewModel)?.title =
-            "2333=${System.currentTimeMillis()}"
-        recyclerViewData.notifyChanged()
-//        recyclerViewData.value?.add(5, object : TestItemViewModel {
-//            override val title = MutableLiveData("5678")
-//            override fun key() = "5678"
-//        })
-//        recyclerViewData.notifyChanged()
-    }
-
-    fun loading() {
-//        loadingState set LoadingState.SUCCESS
-        loadingState set LoadingState.LOADING
-    }
-
-    fun empty() {
-        loadingState set LoadingState.EMPTY
-    }
-
-    fun failed() {
-        loadingState set LoadingState.FAILED
-    }
-
-    fun footerLoading() {
-        footerState set EdgeState.LOADING
-    }
-
-    fun footerNoMore() {
-        footerState set EdgeState.NO_MORE
-    }
-
-    fun footerFailed() {
-        footerState set EdgeState.FAILED
-    }
-
-    fun footerSuccess() {
-        footerState set EdgeState.SUCCESS
-    }
-
-    override val onEdgeLoadMore = {
-        footerState set EdgeState.LOADING
-        GlobalScope.launch {
-            withContext(Dispatchers.IO) { delay(1000) }
-            footerState set EdgeState.FAILED
-        }
-        Unit
-    }
-
-    override val onEdgeLoadMoreRetry = {
-        GlobalScope.launch {
-            withContext(Dispatchers.Default) { delay(1000) }
-            println("current data size: ${recyclerViewData.size}")
-
-            originData.forEach {
-                recyclerViewData.add(object : Test2ItemViewModel {
-                    private val key = UUID.randomUUID()
-                    override val list = emptyList<String>()
-                    override var title = it
-                    override fun key() = key
-                })
-            }
-            recyclerViewData.notifyChanged()
-            footerState set EdgeState.SUCCESS
-        }
-        Unit
-    }
 }
 
-interface TestItemViewModel : DiffLiveDataItemViewModel, ItemDefinition {
+interface TestItemViewModel : ItemDefinition {
     val title: MutableLiveData<String>
 
     override fun viewCreator() = { parent: ViewGroup ->
@@ -191,9 +155,15 @@ interface TestItemViewModel : DiffLiveDataItemViewModel, ItemDefinition {
     }
 
     override fun type(): Any = TestItemViewModel::class
+
+    override fun content(): Array<ContentItem<*>>? {
+        return arrayOf(
+            ContentItem(title.value)
+        )
+    }
 }
 
-interface Test2ItemViewModel : DiffItemViewModel, ItemDefinition {
+interface Test2ItemViewModel : ItemDefinition {
     var title: String
     val list: List<String>
 

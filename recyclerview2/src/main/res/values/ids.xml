@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <item name="saved_on_scroll_listener" type="id" />
+    <item name="data_holder" type="id" />
+    <item name="wt_recycler_view_data_holder" type="id" />
+    <item name="wt_recycler_view_config" type="id" />
+    <item name="wt_recycler_view_adapter_data" type="id" />
+    <item name="wt_recycler_view_extensions_package" type="id" />
 </resources>

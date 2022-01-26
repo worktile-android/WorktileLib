@@ -23,7 +23,7 @@ class StickHeaderDecoration(
 
     override fun onDraw(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
         super.onDraw(c, parent, state)
-        val adapter = parent.adapter as? SimpleAdapter<*>
+        val adapter = parent.adapter as? SimpleAdapter
         val layoutManager = parent.layoutManager as? LinearLayoutManager
         if (adapter == null || layoutManager == null) return
         if (currentTitleView == null) {
@@ -47,7 +47,7 @@ class StickHeaderDecoration(
 
     override fun onDrawOver(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
         super.onDrawOver(c, parent, state)
-        val adapter = parent.adapter as? SimpleAdapter<*>
+        val adapter = parent.adapter as? SimpleAdapter
         val layoutManager = parent.layoutManager as? LinearLayoutManager
         if (adapter == null || layoutManager == null) return
 

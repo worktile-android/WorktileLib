@@ -10,15 +10,13 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.*
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.worktile.ui.recyclerview.data.EdgeItemViewModel
-import com.worktile.ui.recyclerview.data.EdgeState
-import com.worktile.ui.recyclerview.data.LoadingState
-import com.worktile.ui.recyclerview.decoration.StickHeaderDecoration
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import com.worktile.ui.recyclerview.data.*
+import com.worktile.ui.recyclerview.data.EdgeItemDefinition
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import java.util.*
+import kotlin.collections.ArrayList
 
 const val TAG = "RecyclerView"
 
@@ -36,6 +34,163 @@ fun RecyclerView.executeAfterAllAnimationsAreFinished(
             callback.invoke()
         }
     })
+}
+
+private class ExtensionsPackage(val recyclerView: RecyclerView) {
+    val recyclerViewData = RecyclerViewData()
+    val adapterData = MutableStateFlow<List<ItemDefinition>?>(null)
+
+    var onLoadFailedRetry: (() -> Unit)? = null
+    var onEdgeLoadMore: (() -> Unit)? = null
+    var onEdgeLoadMoreRetry: (() -> Unit)? = null
+
+    var config: Config = Config()
+
+    @Suppress("PropertyName")
+    var _viewModel: RecyclerViewViewModel? = null
+    val viewModel: RecyclerViewViewModel get() = _viewModel ?: throw Exception()
+
+    fun collectAdapterData(key: String? = null): List<ItemDefinition> {
+        synchronized(recyclerViewData) {
+            val loadingStateData = LoadingStateData(recyclerView, config, onLoadFailedRetry)
+            return AlwaysNotEqualList<ItemDefinition>(key).apply {
+                when (viewModel.states.loadingState) {
+                    LoadingState.EMPTY -> {
+                        add(loadingStateData.emptyItemViewModel)
+                    }
+
+                    LoadingState.LOADING -> {
+                        add(loadingStateData.loadingItemViewModel)
+                    }
+
+                    LoadingState.FAILED -> {
+                        add(loadingStateData.failureItemViewModel)
+                    }
+
+                    LoadingState.SUCCESS -> {
+                        if (config.loadMoreOnHeader) {
+                            val headerStateData = EdgeStateData(
+                                recyclerView,
+                                config,
+                                onEdgeLoadMoreRetry
+                            )
+                            when (viewModel.states.headerState) {
+                                EdgeState.FAILED -> add(headerStateData.failItemViewModel)
+                                EdgeState.LOADING -> add(headerStateData.loadingItemViewViewModel)
+                                EdgeState.NO_MORE -> add(headerStateData.noMoreItemViewModel)
+                                else -> {
+                                }
+                            }
+                        }
+                        if (recyclerViewData.itemGroups.isNotEmpty()) {
+                            recyclerViewData.itemGroups.forEach { itemGroup ->
+                                itemGroup.title?.apply { add(this) }
+                                if (itemGroup.isOpen) {
+                                    addAll(itemGroup.items)
+                                }
+                            }
+                        } else {
+                            addAll(recyclerViewData)
+                        }
+                        if (config.loadMoreOnFooter) {
+                            val footerStateData = EdgeStateData(
+                                recyclerView,
+                                config,
+                                onEdgeLoadMoreRetry
+                            )
+                            when (viewModel.states.footerState) {
+                                EdgeState.FAILED -> add(footerStateData.failItemViewModel)
+                                EdgeState.LOADING -> add(footerStateData.loadingItemViewViewModel)
+                                EdgeState.NO_MORE -> add(footerStateData.noMoreItemViewModel)
+                                else -> {
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private val RecyclerView.extensionsPackage
+    get() = (getTag(R.id.wt_recycler_view_extensions_package) as? ExtensionsPackage)
+        ?: run {
+            ExtensionsPackage(this).apply {
+                setTag(R.id.wt_recycler_view_extensions_package, this)
+            }
+        }
+
+private val RecyclerView.config get() = extensionsPackage.config
+private val RecyclerView.adapterData get() = extensionsPackage.adapterData
+private val RecyclerView.viewModel get() = extensionsPackage.viewModel
+private val RecyclerView.simpleAdapter get() = adapter as? SimpleAdapter
+private fun RecyclerView.collectAdapterData(key: String? = null) =
+    extensionsPackage.collectAdapterData(key)
+
+val RecyclerView.data get() = extensionsPackage.recyclerViewData
+
+fun registerUpdateCallback(key: String, callback: () -> Unit) {
+    updateCallbacks[key] = callback
+}
+
+fun RecyclerView.notifyChanged(key: String) {
+    adapterData.value = collectAdapterData(key)
+}
+
+fun RecyclerView.notifyChanged(callback: (() -> Unit)? = null) {
+    val key = callback?.run {
+        val uuid = UUID.randomUUID().toString()
+        updateCallbacks[uuid] = this
+        uuid
+    }
+    adapterData.value = collectAdapterData(key)
+}
+
+fun RecyclerView.initLoadingState(state: LoadingState = LoadingState.LOADING) {
+    if (!viewModel.states.loadingStateInitialized) {
+        viewModel.states.loadingStateInitialized = true
+        setLoadingState(state)
+    }
+}
+
+fun RecyclerView.setLoadingState(state: LoadingState) {
+    if (viewModel.states.loadingState != state) {
+        viewModel.states.loadingState = state
+        adapterData.value = collectAdapterData()
+    }
+}
+
+fun RecyclerView.setEdgeState(state: EdgeState) {
+    if (config.loadMoreOnHeader) {
+        if (viewModel.states.headerState != state) {
+            viewModel.states.headerState = state
+            if (state != EdgeState.SUCCESS) {
+                adapterData.value = collectAdapterData()
+            }
+        }
+    }
+
+    if (config.loadMoreOnFooter) {
+        if (viewModel.states.footerState != state) {
+            viewModel.states.footerState = state
+            if (state != EdgeState.SUCCESS) {
+                adapterData.value = collectAdapterData()
+            }
+        }
+    }
+}
+
+fun RecyclerView.setOnLoadFailedRetry(func: () -> Unit) {
+    extensionsPackage.onLoadFailedRetry = func
+}
+
+fun RecyclerView.setOnEdgeLoadMore(func: () -> Unit) {
+    extensionsPackage.onEdgeLoadMore = func
+}
+
+fun RecyclerView.setOnEdgeLoadMoreRetry(func: () -> Unit) {
+    extensionsPackage.onEdgeLoadMoreRetry = func
 }
 
 fun <T> RecyclerView.bind(
@@ -60,39 +215,7 @@ private fun <T> RecyclerView.bind(
     lifecycleOwner: LifecycleOwner,
     config: Config
 ) where T : RecyclerViewViewModel, T : ViewModel {
-    val innerViewModel = InnerViewModel(viewModel, config) {
-//        CoroutineScope(Dispatchers.Main).launch {
-//            for (index in 0 until itemDecorationCount) {
-//                if (getItemDecorationAt(index) is StickHeaderDecoration) {
-//                    removeItemDecorationAt(index)
-//                    val firstViewHolder = findViewHolderForAdapterPosition(0)
-//                    if (firstViewHolder == null) {
-//
-//                    }
-//                    break
-//                }
-//            }
-//            addItemDecoration(StickHeaderDecoration(viewModel.recyclerViewData.itemGroups))
-//        }
-    }
-
-    viewModel.apply {
-        loadingState.apply {
-            this.config = config
-            onLoadFailedRetry = viewModel.onLoadFailedRetry
-        }
-
-        footerState.apply {
-            this.config = config
-            onEdgeLoadMoreRetry = viewModel.onEdgeLoadMoreRetry
-        }
-
-        headerState.apply {
-            this.config = config
-            onEdgeLoadMoreRetry = viewModel.onEdgeLoadMoreRetry
-        }
-    }
-
+    extensionsPackage._viewModel = viewModel
     layoutManager = LinearLayoutManager(context)
 
     var isDown = true
@@ -109,7 +232,8 @@ private fun <T> RecyclerView.bind(
         }
         false
     }
-    val saveOnScrollListener = getTag(R.id.saved_on_scroll_listener) as? RecyclerView.OnScrollListener
+    val saveOnScrollListener =
+        getTag(R.id.saved_on_scroll_listener) as? RecyclerView.OnScrollListener
     if (saveOnScrollListener == null) {
         addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
@@ -123,12 +247,12 @@ private fun <T> RecyclerView.bind(
                     }
                     val canLoadMoreOnFooter = config.loadMoreOnFooter
                             && stopScrollDown
-                            && viewModel.footerState.state == EdgeState.SUCCESS
+                            && viewModel.states.footerState == EdgeState.SUCCESS
                     val canLoadMoreOnHeader = config.loadMoreOnHeader
                             && stopScrollUp
-                            && viewModel.headerState.state == EdgeState.SUCCESS
+                            && viewModel.states.headerState == EdgeState.SUCCESS
                     if (canLoadMoreOnFooter || canLoadMoreOnHeader) {
-                        viewModel.onEdgeLoadMore?.invoke()
+                        extensionsPackage.onEdgeLoadMore?.invoke()
                     }
                 }
             }
@@ -137,111 +261,46 @@ private fun <T> RecyclerView.bind(
         })
     }
 
-    adapter = SimpleAdapter(
-        innerViewModel.adapterData.value,
-        config.log
-    ).apply adapter@{
-        lifecycleOwner.lifecycleScope.launch {
-            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                innerViewModel
-                    .adapterData
-                    .collect {
+    lifecycleOwner.lifecycleScope.launch {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            adapterData.collect {
+                if (it != null) {
+                    simpleAdapter?.apply {
                         updateData(it)
-                    }
-            }
-        }
-        registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
-            override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-                super.onItemRangeInserted(positionStart, itemCount)
-                if (itemCount == 1) {
-                    if (positionStart == this@adapter.itemCount - 1
-                        && data.lastOrNull() is EdgeItemViewModel
-                    ) {
-                        scrollToPosition(this@adapter.itemCount - 1)
-                    }
-                    if (positionStart == 0 && data.firstOrNull() is EdgeItemViewModel) {
-                        scrollToPosition(0)
-                    }
-                }
-            }
-        })
-    }
-}
-
-internal class InnerViewModel(
-    private val viewModel: RecyclerViewViewModel,
-    private val config: Config,
-    private val onGroupMode: () -> Unit
-) : ViewModel() {
-    val adapterData by lazy { MutableStateFlow(collectToAdapterData()) }
-
-    init {
-        viewModel.apply {
-            recyclerViewData.setInnerViewModel(this@InnerViewModel)
-            loadingState.setInnerViewModel(this@InnerViewModel)
-            footerState.setInnerViewModel(this@InnerViewModel)
-            headerState.setInnerViewModel(this@InnerViewModel)
-        }
-    }
-
-    @Synchronized
-    fun collectToAdapterData(): List<ItemDefinition> {
-        return AlwaysNotEqualList<ItemDefinition>().apply {
-            when (viewModel.loadingState.state) {
-                LoadingState.EMPTY -> {
-                    add(viewModel.loadingState.emptyItemViewModel)
-                }
-
-                LoadingState.LOADING -> {
-                    add(viewModel.loadingState.loadingItemViewModel)
-                }
-
-                LoadingState.FAILED -> {
-                    add(viewModel.loadingState.failureItemViewModel)
-                }
-
-                LoadingState.SUCCESS -> {
-                    if (config.loadMoreOnHeader) {
-                        when (viewModel.headerState.state) {
-                            EdgeState.FAILED -> add(viewModel.headerState.failItemViewModel)
-                            EdgeState.LOADING -> add(viewModel.headerState.loadingItemViewViewModel)
-                            EdgeState.NO_MORE -> add(viewModel.headerState.noMoreItemViewModel)
-                            else -> {
-                            }
-                        }
-                    }
-                    if (viewModel.recyclerViewData.itemGroups.isNotEmpty()) {
-                        onGroupMode()
-                        viewModel.recyclerViewData.itemGroups.forEach { itemGroup ->
-                            itemGroup.title?.apply { add(this) }
-                            if (itemGroup.isOpen) {
-                                addAll(itemGroup.items)
-                            }
-                        }
-                    } else {
-                        addAll(viewModel.recyclerViewData)
-                    }
-                    if (config.loadMoreOnFooter) {
-                        when (viewModel.footerState.state) {
-                            EdgeState.FAILED -> add(viewModel.footerState.failItemViewModel)
-                            EdgeState.LOADING -> add(viewModel.footerState.loadingItemViewViewModel)
-                            EdgeState.NO_MORE -> add(viewModel.footerState.noMoreItemViewModel)
-                            else -> {
-                            }
+                    } ?: run {
+                        adapter = SimpleAdapter(it, config.log).apply adapter@{
+                            registerAdapterDataObserver(
+                                object : RecyclerView.AdapterDataObserver() {
+                                    override fun onItemRangeInserted(
+                                        positionStart: Int,
+                                        itemCount: Int
+                                    ) {
+                                        super.onItemRangeInserted(positionStart, itemCount)
+                                        if (itemCount == 1) {
+                                            if (positionStart == this@adapter.itemCount - 1
+                                                && data.lastOrNull() is EdgeItemDefinition
+                                            ) {
+                                                scrollToPosition(this@adapter.itemCount - 1)
+                                            }
+                                            if (positionStart == 0 &&
+                                                    data.firstOrNull() is EdgeItemDefinition) {
+                                                scrollToPosition(0)
+                                            }
+                                        }
+                                    }
+                                })
                         }
                     }
                 }
             }
         }
-    }
-
-    fun updateAdapterData() {
-        adapterData.value = collectToAdapterData()
     }
 }
 
 @Suppress("EqualsOrHashCode")
-private class AlwaysNotEqualList<T> : ArrayList<T>() {
+internal class AlwaysNotEqualList<T>(
+    val key: String? = null
+) : ArrayList<T>() {
     override fun equals(other: Any?): Boolean {
         return false
     }
