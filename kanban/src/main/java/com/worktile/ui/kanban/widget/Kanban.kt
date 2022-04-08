@@ -70,7 +70,9 @@ class Kanban : FrameLayout {
             viewPager.adapter = value
         }
 
-    private val viewPager = ViewPager2(context)
+    private val viewPager = ViewPager2(context).apply {
+        id = R.id.wt_kanban_view_pager
+    }
     private val pagerRecyclerView by lazy { viewPager.getChildAt(0) as RecyclerView }
     private val snapHelper by lazy {
         ViewPager2::class.java

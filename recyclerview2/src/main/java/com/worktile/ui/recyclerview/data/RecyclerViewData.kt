@@ -5,4 +5,9 @@ import com.worktile.ui.recyclerview.ItemGroup
 
 class RecyclerViewData : ArrayList<ItemDefinition>() {
     val itemGroups = mutableListOf<ItemGroup>()
+
+    override fun clear() {
+        super.clear()
+        itemGroups.clear()
+    }
 }

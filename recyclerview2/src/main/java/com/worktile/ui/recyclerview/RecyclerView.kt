@@ -210,7 +210,7 @@ fun <T> RecyclerView.bind(
 }
 
 @SuppressLint("ClickableViewAccessibility")
-private fun <T> RecyclerView.bind(
+fun <T> RecyclerView.bind(
     viewModel: T,
     lifecycleOwner: LifecycleOwner,
     config: Config
