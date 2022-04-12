@@ -165,9 +165,9 @@ class WorktileProgressBar(context: Context?, attrs: AttributeSet?, defStyleAttr:
     companion object {
         private var RADIUS = 0
         private var DISTANCE = 0
-        private val COLOR_BALL_RIGHT = Color.parseColor("#ffc442")
+        private val COLOR_BALL_RIGHT = Color.parseColor("#66348fe4")
         private val COLOR_BALL_CENTER = Color.parseColor("#348fe4")
-        private val COLOR_BALL_LEFT = Color.parseColor("#ff5b57")
+        private val COLOR_BALL_LEFT = Color.parseColor("#cc348fe4")
         private const val DURATION = 1000
     }
 
