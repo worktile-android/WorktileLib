@@ -1,7 +1,10 @@
 package com.worktile.common
 
+import androidx.lifecycle.MediatorLiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.worktile.common.arch.livedata.composeLiveData
 
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -20,5 +23,10 @@ class ExampleInstrumentedTest {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
         assertEquals("com.worktile.base.test", appContext.packageName)
+        val liveData1 = MutableLiveData<Int>()
+        val liveData2 = MutableLiveData<String>()
+        val me: MediatorLiveData<Any> = composeLiveData(liveData1, liveData2) { _, _, a ->
+            a.postValue(Any())
+        }
     }
 }
