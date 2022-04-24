@@ -98,7 +98,7 @@ def configPublish(Project project, group, _artifact, ver) {
 }
 
 ext {
-    common_version = "0.0.9.22042500-SNAPSHOT"
+    common_version = "0.0.9.22042501-SNAPSHOT"
     widgets_version = "0.0.1.22040815-SNAPSHOT"
     recyclerview_version = "0.9.7.21101500-SNAPSHOT"
     recyclerview2_version = "1.0.0.22040815-SNAPSHOT"
