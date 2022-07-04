@@ -2,9 +2,10 @@ package com.worktile.common.arch.livedata
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
+import androidx.lifecycle.MutableLiveData
 import kotlin.experimental.ExperimentalTypeInference
 
-fun <I1, I2, O : Any> combineLiveData(
+fun <I1, I2, O> combineLiveData(
     input1: LiveData<I1>,
     input2: LiveData<I2>,
     combine: (I1?, I2?, MediatorLiveData<O>) -> Unit
@@ -56,7 +57,7 @@ fun <I1, I2, I3, I4, O> combineLiveData(
 }
 
 @OptIn(ExperimentalTypeInference::class)
-fun <T, R, O : Any> LiveData<T>.combine(
+fun <T, R, O> LiveData<T>.combine(
     liveData: LiveData<R>,
     @BuilderInference onCombine: MediatorLiveData<O>.(T?, R?) -> Unit
 ): MediatorLiveData<O> {
@@ -66,4 +67,18 @@ fun <T, R, O : Any> LiveData<T>.combine(
     ) { input1, input2, output: MediatorLiveData<O> ->
         output.onCombine(input1, input2)
     }
+}
+
+fun <T, R> LiveData<T>.changedWith(liveData: LiveData<R>): LiveData<CombinationData<T, R>> {
+    return combine(liveData) { t, r ->
+        postValue(CombinationData(t, r))
+    }
+}
+
+class CombinationData<T, R>(
+    val data: T,
+    val addition: R
+) {
+    operator fun component1(): T = data
+    operator fun component2(): R = addition
 }

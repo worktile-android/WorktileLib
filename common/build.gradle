@@ -27,7 +27,13 @@ android {
     }
 
     kotlinOptions {
-        freeCompilerArgs += ['-opt-in=kotlin.RequiresOptIn']
+        freeCompilerArgs += ['-Xopt-in=kotlin.RequiresOptIn']
+        jvmTarget = '1.8'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
 }

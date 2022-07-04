@@ -24,6 +24,7 @@ private class DirectReturnTemp<T> {
 }
 
 class Operation(val data: ParserData) {
+    var errorFlags = 0b00000000
 
     fun <T> String.into(property: KMutableProperty0<T>, tkClass: KClass<*>): IntoResult<T> {
         val value = data.jsonObject.opt(this)
@@ -113,7 +114,7 @@ class Operation(val data: ParserData) {
                     )
                 }
             }
-        } ?: Log.w(TAG, "key \"${this}\"不存在于${data.jsonObject}中")
+        } ?: error(THROW_NOT_FOUNT_EXCEPTION, "key \"${this}\"不存在于${data.jsonObject}中")
         return IntoResult()
     }
 
@@ -128,7 +129,9 @@ class Operation(val data: ParserData) {
     fun <T> String.directReturn(tkClass: KClass<*>): T? {
         val keys = split('.')
         val directReturnTemp = DirectReturnTemp<T>()
-        directReturnSplitBlock(0, keys, tkClass, directReturnTemp).invoke(Operation(data))
+        directReturnSplitBlock(0, keys, tkClass, directReturnTemp).invoke(Operation(data).apply {
+            this.errorFlags = this@Operation.errorFlags
+        })
         return directReturnTemp.value
     }
 
@@ -173,7 +176,7 @@ class Operation(val data: ParserData) {
             } else {
                 Log.w(TAG, "key \"${this@then}\"对应的值不是JSONObject，无法执行then方法")
             }
-        } ?: Log.w(TAG, "key \"${this@then}\"不存在于${data.jsonObject}中")
+        } ?: error(THROW_NOT_FOUNT_EXCEPTION, "key \"${this@then}\"不存在于${data.jsonObject}中")
         return ThenResult(this)
     }
 
@@ -233,7 +236,7 @@ class Operation(val data: ParserData) {
         val value = tkClass.java.newInstance() as T
         when (val thenObject = data.jsonObject.opt(this)) {
             null -> {
-                Log.w(TAG, "key \"${this}\"不存在于${data.jsonObject}中")
+                error(THROW_NOT_FOUNT_EXCEPTION, "key \"${this}\"不存在于${data.jsonObject}中")
             }
             is JSONObject -> {
                 block.invoke(Parser(ParserData(data.jsonDsl, thenObject, this)), value)
@@ -255,7 +258,7 @@ class Operation(val data: ParserData) {
     fun String.foreach(block: Parser.() -> Unit) {
         when (val jsonArray = data.jsonObject.opt(this)) {
             null -> {
-                Log.w(TAG, "key \"${this}\"不存在于${data.jsonObject}中")
+                error(THROW_NOT_FOUNT_EXCEPTION, "key \"${this}\"不存在于${data.jsonObject}中")
             }
             is JSONArray -> {
                 parseJsonArray(jsonArray, block)
@@ -276,7 +279,7 @@ class Operation(val data: ParserData) {
         key?.apply {
             foreach(block)
         } ?: run {
-            Log.w(TAG, "提供的可选key ${alterKeys}都不存在")
+            error(THROW_NOT_FOUNT_EXCEPTION, "提供的可选key ${alterKeys}都不存在")
         }
     }
 
@@ -302,6 +305,17 @@ class Operation(val data: ParserData) {
 
 //                else -> block.invoke(Parser(data), item)
             }
+        }
+    }
+
+    private fun error(flag: Int, message: String) {
+        if (ERROR_MASK and errorFlags == flag) {
+            when (flag) {
+                THROW_NOT_FOUNT_EXCEPTION -> throw NotFoundException(message)
+                else -> Log.w(TAG, message)
+            }
+        } else {
+            Log.w(TAG, message)
         }
     }
 }

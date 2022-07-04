@@ -289,6 +289,12 @@ fun <T> RecyclerView.bind(
                                         }
                                     }
                                 })
+                            if (it is AlwaysNotEqualList) {
+                                it.key?.apply {
+                                    updateCallbacks[this]?.invoke()
+                                    updateCallbacks.remove(this)
+                                }
+                            }
                         }
                     }
                 }

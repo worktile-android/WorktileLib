@@ -17,6 +17,8 @@ interface ItemDefinition {
     fun attach(itemView: View) { }
     fun detach(itemView: View) { }
     fun recycle(itemView: View) { }
+    fun itemAnimationFinished(itemView: View) { }
+    fun allAnimationsFinished(itemView: View) { }
     fun type(): Any = this::class
     fun key(): Any
     fun content(): Array<ContentItem<*>>?

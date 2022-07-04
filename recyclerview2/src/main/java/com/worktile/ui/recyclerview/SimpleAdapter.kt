@@ -4,6 +4,7 @@ import android.util.Log
 import android.util.SparseArray
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.forEach
 import androidx.lifecycle.*
 import androidx.recyclerview.widget.*
 import kotlinx.coroutines.*
@@ -258,6 +259,15 @@ class SimpleAdapter(
                 }
 
             })
+            recyclerView?.apply {
+                itemAnimator?.isRunning {
+                    forEach { item ->
+                        (getChildViewHolder(item) as? ItemViewHolder)
+                            ?.itemData
+                            ?.allAnimationsFinished(item)
+                    }
+                }
+            }
             if (newData is AlwaysNotEqualList) {
                 newData.key?.apply {
                     updateCallbacks[this]?.invoke()
