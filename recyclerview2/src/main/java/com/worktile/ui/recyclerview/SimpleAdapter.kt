@@ -260,21 +260,23 @@ class SimpleAdapter(
 
             })
             recyclerView?.apply {
-                itemAnimator?.isRunning {
-                    forEach { item ->
-                        (getChildViewHolder(item) as? ItemViewHolder)
-                            ?.itemData
-                            ?.allAnimationsFinished(item)
+                post {
+                    itemAnimator?.isRunning {
+                        forEach { item ->
+                            (getChildViewHolder(item) as? ItemViewHolder)
+                                ?.itemData
+                                ?.allAnimationsFinished(item)
+                        }
+                        if (newData is AlwaysNotEqualList) {
+                            newData.key?.apply {
+                                updateCallbacks[this]?.invoke()
+                                updateCallbacks.remove(this)
+                            }
+                        }
+                        updateCallback?.invoke()
                     }
                 }
             }
-            if (newData is AlwaysNotEqualList) {
-                newData.key?.apply {
-                    updateCallbacks[this]?.invoke()
-                    updateCallbacks.remove(this)
-                }
-            }
-            updateCallback?.invoke()
         }
     }
 

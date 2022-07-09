@@ -8,6 +8,7 @@ import android.view.ViewConfiguration
 import androidx.activity.ComponentActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.*
+import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.worktile.ui.recyclerview.data.*
@@ -217,6 +218,15 @@ fun <T> RecyclerView.bind(
 ) where T : RecyclerViewViewModel, T : ViewModel {
     extensionsPackage._viewModel = viewModel
     layoutManager = LinearLayoutManager(context)
+
+    itemAnimator = object : DefaultItemAnimator() {
+        override fun onAnimationFinished(viewHolder: RecyclerView.ViewHolder) {
+            super.onAnimationFinished(viewHolder)
+            (viewHolder as? SimpleAdapter.ItemViewHolder)
+                ?.itemData
+                ?.itemAnimationFinished(viewHolder.itemView)
+        }
+    }
 
     var isDown = true
     var down = 0f
