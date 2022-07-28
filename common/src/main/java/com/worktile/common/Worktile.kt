@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+import android.util.Log
 
 @SuppressLint("StaticFieldLeak")
 object Worktile {
@@ -14,7 +15,10 @@ object Worktile {
     private var application: Application? = null
 
     fun install(application: Application) {
-        if (this.application != null) return
+        if (this.application != null) {
+            Log.e("Worktile", "不要重复初始化Worktile")
+            return
+        }
         this.application = application
         val contextRecorder = object : ActivityLifecycleCallbacks() {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {

@@ -98,10 +98,10 @@ def configPublish(Project project, group, _artifact, ver) {
 }
 
 ext {
-    common_version = "0.0.9.220050821-SNAPSHOT"
-    widgets_version = "0.0.1.22040815-SNAPSHOT"
+    common_version = "0.0.9.22070923-SNAPSHOT"
+    widgets_version = "0.0.1.22071000-SNAPSHOT"
     recyclerview_version = "0.9.7.21101500-SNAPSHOT"
-    recyclerview2_version = "1.0.0.2207050101-SNAPSHOT"
+    recyclerview2_version = "1.0.0.22072502-SNAPSHOT"
     json_version = "0.2.1.22031623-SNAPSHOT"
     kanban_version = "0.0.1.22012702-SNAPSHOT"
     wt_common = "com.worktile:common:$common_version" as GStringImpl
@@ -121,4 +121,5 @@ ext {
     recyclerview = 'androidx.recyclerview:recyclerview:1.2.1'
     constraintlayout = "androidx.constraintlayout:constraintlayout:2.0.1"
     viewpager2 = "androidx.viewpager2:viewpager2:1.0.0"
+    startup_runtime = "androidx.startup:startup-runtime:1.0.0"
 }

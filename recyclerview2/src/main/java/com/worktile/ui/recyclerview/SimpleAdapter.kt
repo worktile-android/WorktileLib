@@ -44,6 +44,9 @@ class SimpleAdapter(
         data[position].apply {
             contentSparseArray.put(position, content())
             holder.itemData = this
+            holder.itemView.setTag(R.id.item_definition_key, key())
+            postponeAsyncMainBlocks[this]?.invoke()
+            postponeAsyncMainBlocks.remove(this)
             bind(holder.itemView)
         }
     }

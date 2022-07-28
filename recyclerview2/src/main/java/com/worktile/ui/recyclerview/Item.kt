@@ -2,12 +2,12 @@ package com.worktile.ui.recyclerview
 
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.view.forEachIndexed
-import androidx.lifecycle.LiveData
-import androidx.recyclerview.widget.RecyclerView
-import com.worktile.common.Default
-import java.lang.reflect.Field
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 typealias ViewCreator = (parent: ViewGroup) -> View
 
@@ -37,5 +37,26 @@ infix fun <T> T.withComparator(comparator: ContentItemComparator<T>) = ContentIt
 
 inline fun <reified T> contentArrayOf(vararg elements: T): Array<ContentItem<T>> {
     return arrayOf(*elements).map { ContentItem(it) }.toTypedArray()
+}
+
+internal val postponeAsyncMainBlocks = WeakHashMap<ItemDefinition, () -> Unit>()
+
+fun ItemDefinition.itemAsync(async: suspend ItemAsyncScope.() -> Unit) {
+    CoroutineScope(Dispatchers.Default).launch {
+        async.invoke(ItemAsyncScope())
+    }
+}
+
+class ItemAsyncScope {
+    suspend fun ItemDefinition.main(itemView: View, block: () -> Unit) {
+        withContext(Dispatchers.Main) {
+            val keyInTag = itemView.getTag(R.id.item_definition_key)
+            if (keyInTag == key() || keyInTag == null) {
+                block()
+            } else {
+                postponeAsyncMainBlocks[this@main] = block
+            }
+        }
+    }
 }
 

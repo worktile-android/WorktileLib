@@ -6,4 +6,5 @@
     <item name="wt_recycler_view_config" type="id" />
     <item name="wt_recycler_view_adapter_data" type="id" />
     <item name="wt_recycler_view_extensions_package" type="id" />
+    <item name="item_definition_key" type="id" />
 </resources>

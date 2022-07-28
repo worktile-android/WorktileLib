@@ -44,10 +44,8 @@ dependencies {
     implementation lifecycle_runtime_ktx
     api recyclerview
 
-    debugApi project(path: ':common')
-    debugImplementation project(path: ':widgets')
-    releaseApi wt_common
-    releaseImplementation wt_widgets
+    api project(path: ':common')
+    implementation project(path: ':widgets')
 
     testImplementation 'junit:junit:4.+'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'

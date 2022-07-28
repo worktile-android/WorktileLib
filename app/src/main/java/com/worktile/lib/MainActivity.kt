@@ -6,23 +6,16 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.recyclerview.widget.GridLayoutManager
 import com.worktile.common.default
-import com.worktile.json.JsonDsl
-import com.worktile.json.Parser
-import com.worktile.json.ParserData
 import com.worktile.ui.recyclerview.*
 import com.worktile.ui.recyclerview.data.EdgeState
 import com.worktile.ui.recyclerview.data.LoadingState
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.collect
-import org.json.JSONObject
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
@@ -152,6 +145,11 @@ interface TestItemViewModel : ItemDefinition {
 
     override fun bind(itemView: View) {
         (itemView as? TextView)?.text = title.value
+        itemAsync {
+            main(itemView) {
+
+            }
+        }
     }
 
     override fun type(): Any = TestItemViewModel::class
