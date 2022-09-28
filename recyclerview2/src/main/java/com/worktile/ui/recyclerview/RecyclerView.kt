@@ -217,7 +217,9 @@ fun <T> RecyclerView.bind(
     config: Config
 ) where T : RecyclerViewViewModel, T : ViewModel {
     extensionsPackage._viewModel = viewModel
-    layoutManager = LinearLayoutManager(context)
+    if (layoutManager == null) {
+        layoutManager = LinearLayoutManager(context)
+    }
 
     itemAnimator = object : DefaultItemAnimator() {
         override fun onAnimationFinished(viewHolder: RecyclerView.ViewHolder) {
