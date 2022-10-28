@@ -13,6 +13,7 @@ import com.worktile.common.default
 import com.worktile.ui.recyclerview.*
 import com.worktile.ui.recyclerview.data.EdgeState
 import com.worktile.ui.recyclerview.data.LoadingState
+import com.worktile.ui.recyclerview.group.GroupLiveData
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -108,6 +109,11 @@ class MainActivity : AppCompatActivity() {
         footer_success.setOnClickListener {
             recycler_view.setEdgeState(EdgeState.SUCCESS)
         }
+        viewModel.groupLiveData.observe(recycler_view,this) { group, t ->
+            group.data.apply {
+
+            }
+        }
     }
 
     private suspend fun check(version: String) {
@@ -126,6 +132,8 @@ class MainActivity : AppCompatActivity() {
 class MainActivityViewModel : ViewModel(), RecyclerViewViewModel by default() {
     val originData = MutableLiveData(arrayOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ,"16", "17", "18", "11", "101","9", "10" ,"16", "17", "18", "11", "101",
         "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" ,"16", "17", "18", "11", "101","9", "10" ,"16", "17", "18", "11", "101"))
+
+    val groupLiveData = GroupLiveData<Any>()
 
     init {
 

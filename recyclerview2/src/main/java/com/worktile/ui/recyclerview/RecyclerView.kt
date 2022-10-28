@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package com.worktile.ui.recyclerview
 
 import android.annotation.SuppressLint
@@ -13,11 +15,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.worktile.ui.recyclerview.data.*
 import com.worktile.ui.recyclerview.data.EdgeItemDefinition
+import com.worktile.ui.recyclerview.group.Group
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.collections.ArrayList
+import kotlin.collections.LinkedHashMap
 
 const val TAG = "RecyclerView"
 
@@ -37,9 +41,10 @@ fun RecyclerView.executeAfterAllAnimationsAreFinished(
     })
 }
 
-private class ExtensionsPackage(val recyclerView: RecyclerView) {
+internal class ExtensionsPackage(val recyclerView: RecyclerView) {
     val recyclerViewData = RecyclerViewData()
     val adapterData = MutableStateFlow<List<ItemDefinition>?>(null)
+    val groupData = LinkedHashMap<UUID, Group>()
 
     var onLoadFailedRetry: (() -> Unit)? = null
     var onEdgeLoadMore: (() -> Unit)? = null
@@ -114,7 +119,7 @@ private class ExtensionsPackage(val recyclerView: RecyclerView) {
     }
 }
 
-private val RecyclerView.extensionsPackage
+internal val RecyclerView.extensionsPackage
     get() = (getTag(R.id.wt_recycler_view_extensions_package) as? ExtensionsPackage)
         ?: run {
             ExtensionsPackage(this).apply {
@@ -232,7 +237,7 @@ fun <T> RecyclerView.bind(
 
     var isDown = true
     var down = 0f
-    setOnTouchListener { v, event ->
+    setOnTouchListener { _, event ->
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
                 down = event.y
@@ -319,6 +324,15 @@ fun <T> RecyclerView.bind(
 internal class AlwaysNotEqualList<T>(
     val key: String? = null
 ) : ArrayList<T>() {
+    override fun equals(other: Any?): Boolean {
+        return false
+    }
+}
+
+@Suppress("EqualsOrHashCode")
+internal class AlwaysNotEqualLinkedList<T>(
+    val key: String? = null
+) : LinkedList<T>() {
     override fun equals(other: Any?): Boolean {
         return false
     }

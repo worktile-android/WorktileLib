@@ -2,6 +2,7 @@ package com.worktile.ui.recyclerview
 
 const val ITEM_GROUP_NO_ID = ""
 
+@Deprecated("")
 open class ItemGroup(
     items: List<ItemDefinition> = emptyList(),
     val id: String = ITEM_GROUP_NO_ID
