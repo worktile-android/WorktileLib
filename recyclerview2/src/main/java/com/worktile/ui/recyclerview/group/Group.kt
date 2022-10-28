@@ -9,12 +9,10 @@ import com.worktile.ui.recyclerview.data
 import com.worktile.ui.recyclerview.data.RecyclerViewData
 import com.worktile.ui.recyclerview.extensionsPackage
 import com.worktile.ui.recyclerview.notifyChanged
-import java.util.UUID
 
-class Group(
-    val uuid: UUID,
-    val data: MutableList<ItemDefinition>
-) {
+class Group {
+    val data = mutableListOf<ItemDefinition>()
+
     private var _isOpen = true
     val isOpen get() = _isOpen
 
@@ -36,9 +34,13 @@ class Group(
 
 internal val RecyclerView.groupData get() = extensionsPackage.groupData
 
+fun RecyclerView.addGroup(group: Group) {
+    groupData.add(group)
+}
+
 private fun RecyclerView.collectDataFromGroup() {
     data.clear()
-    groupData.forEach { (_, group) ->
+    groupData.forEach { group ->
         if (group.isOpen) {
             data.addAll(group.data)
         } else if (group.hasTitle) {

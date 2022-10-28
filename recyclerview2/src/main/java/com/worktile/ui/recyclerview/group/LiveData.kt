@@ -5,10 +5,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.RecyclerView
-import com.worktile.ui.recyclerview.ItemDefinition
-import java.util.*
 
-class GroupLiveData<T>(val uuid: UUID = UUID.randomUUID()) : MediatorLiveData<T>() {
+class GroupLiveData<T> : MediatorLiveData<T>() {
     override fun observe(owner: LifecycleOwner, observer: Observer<in T>) {
         throw RuntimeException("call observe(RecyclerView, LifecycleOwner, Observer)")
     }
@@ -18,8 +16,8 @@ class GroupLiveData<T>(val uuid: UUID = UUID.randomUUID()) : MediatorLiveData<T>
         owner: LifecycleOwner,
         observer: (group: Group, t: T) -> Unit
     ) {
-        val group = recyclerView.groupData.getOrPut(uuid) {
-            Group(uuid, mutableListOf())
+        val group = Group().apply {
+            recyclerView.addGroup(this)
         }
         super.observe(owner) {
             observer(group, it)

@@ -44,7 +44,7 @@ fun RecyclerView.executeAfterAllAnimationsAreFinished(
 internal class ExtensionsPackage(val recyclerView: RecyclerView) {
     val recyclerViewData = RecyclerViewData()
     val adapterData = MutableStateFlow<List<ItemDefinition>?>(null)
-    val groupData = LinkedHashMap<UUID, Group>()
+    val groupData = mutableListOf<Group>()
 
     var onLoadFailedRetry: (() -> Unit)? = null
     var onEdgeLoadMore: (() -> Unit)? = null
