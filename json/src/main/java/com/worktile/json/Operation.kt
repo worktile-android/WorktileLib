@@ -2,7 +2,6 @@
 
 package com.worktile.json
 
-import android.util.Log
 import com.worktile.json.JsonDsl.Companion.TAG
 import org.json.JSONArray
 import org.json.JSONObject
@@ -51,15 +50,14 @@ class Operation(val data: ParserData) {
                                 }
                                 property.set(list as T)
                                 return IntoResult(list)
-                            } ?: Log.w(TAG, "找不到泛型类型")
+                            } ?: println("${TAG}: 找不到泛型类型")
                         }
                         tkClass == Any::class -> {
                             property.set(value as T)
                         }
                         else -> {
-                            Log.w(
-                                TAG,
-                                "key ${this@into}对应的值是List类型，但${property}不是。jsonObject: ${data.jsonObject}"
+                            println(
+                                "${TAG}: key ${this@into}对应的值是List类型，但${property}不是。jsonObject: ${data.jsonObject}"
                             )
                         }
                     }
@@ -85,7 +83,7 @@ class Operation(val data: ParserData) {
                             return IntoResult(value)
                         }
                         else -> {
-                            Log.w(TAG, "需要一个Number类型属性，但${property}不是")
+                            println("${TAG}: 需要一个Number类型属性，但${property}不是")
                         }
                     }
                 }
@@ -94,7 +92,7 @@ class Operation(val data: ParserData) {
                         property.set(value as T)
                         return IntoResult(value)
                     } else {
-                        Log.w(TAG, "需要一个String类型属性，但${property}不是")
+                        println("${TAG}: 需要一个String类型属性，但${property}不是")
                     }
                 }
                 is Boolean -> {
@@ -102,15 +100,14 @@ class Operation(val data: ParserData) {
                         property.set(value as T)
                         return IntoResult(value)
                     } else {
-                        Log.w(TAG, "需要一个Boolean类型属性，但${property}不是")
+                        println("${TAG}: 需要一个Boolean类型属性，但${property}不是")
                     }
                 }
                 JSONObject.NULL -> {
                 }
                 else -> {
-                    Log.w(
-                        TAG,
-                        "无法解析，key：${this@into}, value=${value::class} jsonObject: ${data.jsonObject}"
+                    println(
+                        "${TAG}: 无法解析，key：${this@into}, value=${value::class} jsonObject: ${data.jsonObject}"
                     )
                 }
             }
@@ -174,7 +171,7 @@ class Operation(val data: ParserData) {
             if (thenObject is JSONObject) {
                 block(Parser(ParserData(data.jsonDsl, thenObject, this@then)))
             } else {
-                Log.w(TAG, "key \"${this@then}\"对应的值不是JSONObject，无法执行then方法")
+                println("${TAG}: key \"${this@then}\"对应的值不是JSONObject，无法执行then方法")
             }
         } ?: error(THROW_NOT_FOUNT_EXCEPTION, "key \"${this@then}\"不存在于${data.jsonObject}中")
         return ThenResult(this)
@@ -242,7 +239,7 @@ class Operation(val data: ParserData) {
                 block.invoke(Parser(ParserData(data.jsonDsl, thenObject, this)), value)
             }
             else -> {
-                Log.w(TAG, "key \"${this}\"对应的值不是JSONObject，无法执行then方法")
+                println("${TAG}: key \"${this}\"对应的值不是JSONObject，无法执行then方法")
             }
         }
         return CustomParseResult(value)
@@ -264,7 +261,7 @@ class Operation(val data: ParserData) {
                 parseJsonArray(jsonArray, block)
             }
             else -> {
-                Log.w(TAG, "key \"${this}\"对应的值不是JSONArray，无法执行foreach方法")
+                println("${TAG}: key \"${this}\"对应的值不是JSONArray，无法执行foreach方法")
             }
         }
     }
@@ -312,10 +309,10 @@ class Operation(val data: ParserData) {
         if (ERROR_MASK and errorFlags == flag) {
             when (flag) {
                 THROW_NOT_FOUNT_EXCEPTION -> throw NotFoundException(message)
-                else -> Log.w(TAG, message)
+                else -> println("${TAG}: $message")
             }
         } else {
-            Log.w(TAG, message)
+            println("${TAG}: $message")
         }
     }
 }

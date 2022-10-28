@@ -39,7 +39,11 @@ def configPublish(Project project, group, _artifact, ver) {
 
     project.afterEvaluate {
         project.task([type: Jar], "sourceJar") {
-            from project.extensions["android"].sourceSets.main.java.srcDirs
+            if (project.extensions.findByName("android")) {
+                from project.extensions["android"].sourceSets.main.java.srcDirs
+            } else {
+                from project.sourceSets.main.java.srcDirs
+            }
         }
 
         project.publishing {
@@ -47,7 +51,11 @@ def configPublish(Project project, group, _artifact, ver) {
                 // Creates a Maven publication called "release".
                 release(MavenPublication) {
                     // Applies the component for the release build variant.
-                    from project.components.release
+                    if (project.components.findByName("release")) {
+                        from project.components.release
+                    } else {
+                        from project.components.java
+                    }
 
                     artifact project.sourceJar {
                         classifier "sources"
@@ -61,7 +69,11 @@ def configPublish(Project project, group, _artifact, ver) {
 
                 debug(MavenPublication) {
                     // Applies the component for the release build variant.
-                    from project.components.debug
+                    if (project.components.findByName("debug")) {
+                        from project.components.debug
+                    } else {
+                        from project.components.java
+                    }
 
                     artifact project.sourceJar {
                         classifier "sources"
@@ -102,7 +114,7 @@ ext {
     widgets_version = "0.0.1.22092822-SNAPSHOT"
     recyclerview_version = "0.9.7.21101500-SNAPSHOT"
     recyclerview2_version = "1.0.0.22092821-SNAPSHOT"
-    json_version = "0.2.1.22031623-SNAPSHOT"
+    json_version = "0.2.1.22102716-SNAPSHOT"
     kanban_version = "0.0.1.22012702-SNAPSHOT"
     wt_common = "com.worktile:common:$common_version" as GStringImpl
     wt_widgets = "com.worktile.ui:widgets:$widgets_version" as GStringImpl
@@ -122,4 +134,6 @@ ext {
     constraintlayout = "androidx.constraintlayout:constraintlayout:2.0.1"
     viewpager2 = "androidx.viewpager2:viewpager2:1.0.0"
     startup_runtime = "androidx.startup:startup-runtime:1.0.0"
+
+    json_object = "org.json:json:20220924"
 }

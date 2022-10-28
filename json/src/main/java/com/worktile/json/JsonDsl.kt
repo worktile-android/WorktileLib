@@ -1,6 +1,5 @@
 package com.worktile.json
 
-import android.util.Log
 import com.worktile.json.annotation.Deserializer
 import com.worktile.json.annotation.Ignore
 import com.worktile.json.annotation.SerializedName
@@ -41,7 +40,7 @@ class JsonDsl(private val autoDeserialize: Boolean = true) {
             parseMethod.invoke(result)
             jsonMap.remove(result)
         } else if (!autoDeserialize) {
-            Log.e(TAG, "${kClass}中没有解析方法")
+            println("${TAG}: ${kClass}中没有解析方法")
         }
 
         return result
@@ -90,7 +89,7 @@ class JsonDsl(private val autoDeserialize: Boolean = true) {
                                         this
                                     )
                                 )
-                            } ?: Log.w(TAG, "在${property}中找不到泛型类型")
+                            } ?: println("${TAG}: 在${property}中找不到泛型类型")
                         }
                         params.add(property to arrayObj)
                     }
@@ -105,7 +104,7 @@ class JsonDsl(private val autoDeserialize: Boolean = true) {
                             Char::class -> it.toChar()
                             Byte::class -> it.toByte()
                             else -> {
-                                Log.w(TAG, "需要一个Number类型属性，但${property.name}不是")
+                                println("${TAG}: 需要一个Number类型属性，但${property.name}不是")
                                 0
                             }
                         }
@@ -120,7 +119,7 @@ class JsonDsl(private val autoDeserialize: Boolean = true) {
                     }
 
                     else -> {
-                        Log.w(TAG, "无法解析，key：$jsonFieldName, value=$it jsonObject: $jsonObject")
+                        println("${TAG}: 无法解析，key：$jsonFieldName, value=$it jsonObject: $jsonObject")
                     }
                 }
             }
@@ -138,8 +137,8 @@ class JsonDsl(private val autoDeserialize: Boolean = true) {
             try {
                 callBy(args)
             } catch (e: Exception) {
-                Log.e(TAG, e.message ?: "")
-                Log.e(TAG, "构造${kClass}对象需要的参数: $parameters, 但只提供了: $args")
+                println("${TAG}: ${e.message ?: ""}")
+                println("${TAG}: 构造${kClass}对象需要的参数: $parameters, 但只提供了: $args")
             }
         } ?: kClass.java.newInstance()
 
