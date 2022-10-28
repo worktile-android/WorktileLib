@@ -38,7 +38,11 @@ fun RecyclerView.addGroup(group: Group) {
     groupData.add(group)
 }
 
-private fun RecyclerView.collectDataFromGroup() {
+fun RecyclerView.clearGroups() {
+    groupData.clear()
+}
+
+private fun RecyclerView.collectDataFromGroups() {
     data.clear()
     groupData.forEach { group ->
         if (group.isOpen) {
@@ -58,7 +62,7 @@ fun RecyclerView.notifyGroupChanged(
     callback: (() -> Unit)? = null,
     processAllData: ((allData: RecyclerViewData) -> Unit)? = null
 ) {
-    collectDataFromGroup()
+    collectDataFromGroups()
     processAllData?.invoke(data)
     notifyChanged(callback)
 }
@@ -67,7 +71,7 @@ fun RecyclerView.notifyGroupChanged(
     key: String,
     processAllData: ((allData: RecyclerViewData) -> Unit)? = null
 ) {
-    collectDataFromGroup()
+    collectDataFromGroups()
     processAllData?.invoke(data)
     notifyChanged(key)
 }
