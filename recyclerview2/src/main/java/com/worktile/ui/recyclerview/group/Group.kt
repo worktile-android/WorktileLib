@@ -14,7 +14,7 @@ class Group(viewModel: RecyclerViewViewModel) {
     val data = mutableListOf<ItemDefinition>()
     private val groupOpened = viewModel.groupOpened
 
-    val isOpen get() = groupOpened[id] ?: false
+    val isOpen get() = groupOpened[id] ?: true
 
     private var _hasTitle = false
     val hasTitle get() = _hasTitle
@@ -28,7 +28,7 @@ class Group(viewModel: RecyclerViewViewModel) {
     }
 
     fun openOrClose() {
-        val opened = groupOpened[id] ?: false
+        val opened = groupOpened[id] ?: true
         groupOpened[id] = !opened
     }
 }
