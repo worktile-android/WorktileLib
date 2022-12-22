@@ -14,11 +14,13 @@ class States {
 
 interface RecyclerViewViewModel {
     val states: States
+    val groupOpened: MutableMap<String/*groupId*/, Boolean/*opened*/>
 
     companion object {
         @Default
         fun default() = object : RecyclerViewViewModel {
             override val states = States()
+            override val groupOpened = mutableMapOf<String, Boolean>()
         }
     }
 }

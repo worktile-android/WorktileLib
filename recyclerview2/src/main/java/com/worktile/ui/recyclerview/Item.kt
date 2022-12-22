@@ -22,6 +22,7 @@ interface ItemDefinition {
     fun type(): Any = this::class
     fun key(): Any
     fun content(): Array<ContentItem<*>>?
+    fun groupId(): String? = null
 }
 
 fun interface ContentItemComparator<T> {

@@ -5,6 +5,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.RecyclerView
+import com.worktile.ui.recyclerview.viewModel
 
 class GroupLiveData<T> : MediatorLiveData<T>() {
     override fun observe(owner: LifecycleOwner, observer: Observer<in T>) {
@@ -16,7 +17,7 @@ class GroupLiveData<T> : MediatorLiveData<T>() {
         owner: LifecycleOwner,
         observer: (group: Group, t: T) -> Unit
     ) {
-        val group = Group().apply {
+        val group = Group(recyclerView.viewModel).apply {
             recyclerView.addGroup(this)
         }
         super.observe(owner) {
@@ -25,10 +26,8 @@ class GroupLiveData<T> : MediatorLiveData<T>() {
     }
 }
 
-fun <T> LiveData<T>.toMutableGroup() = GroupLiveData<T>().apply {
-    addSource(this@toMutableGroup) {
+fun <T> LiveData<T>.toGroup() = GroupLiveData<T>().apply {
+    addSource(this@toGroup) {
         postValue(it)
     }
 }
-
-fun <T> LiveData<T>.toGroup(): LiveData<T> = toMutableGroup()

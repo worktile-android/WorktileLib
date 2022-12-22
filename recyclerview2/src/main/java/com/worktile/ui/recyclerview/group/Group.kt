@@ -4,17 +4,17 @@ package com.worktile.ui.recyclerview.group
 
 import android.util.Log
 import androidx.recyclerview.widget.RecyclerView
-import com.worktile.ui.recyclerview.ItemDefinition
-import com.worktile.ui.recyclerview.data
+import com.worktile.ui.recyclerview.*
 import com.worktile.ui.recyclerview.data.RecyclerViewData
 import com.worktile.ui.recyclerview.extensionsPackage
-import com.worktile.ui.recyclerview.notifyChanged
+import java.util.UUID
 
-class Group {
+class Group(viewModel: RecyclerViewViewModel) {
+    val id = UUID.randomUUID().toString()
     val data = mutableListOf<ItemDefinition>()
+    private val groupOpened = viewModel.groupOpened
 
-    private var _isOpen = true
-    val isOpen get() = _isOpen
+    val isOpen get() = groupOpened[id] ?: false
 
     private var _hasTitle = false
     val hasTitle get() = _hasTitle
@@ -28,7 +28,8 @@ class Group {
     }
 
     fun openOrClose() {
-        _isOpen = !_isOpen
+        val opened = groupOpened[id] ?: false
+        groupOpened[id] = !opened
     }
 }
 
@@ -46,14 +47,24 @@ private fun RecyclerView.collectDataFromGroups() {
     data.clear()
     groupData.forEach { group ->
         if (group.isOpen) {
-            data.addAll(group.data)
+            data.addAll(
+                group.data.map {
+                    GroupItemDefinition(group.id, it)
+                }
+            )
         } else if (group.hasTitle) {
             group.data.firstOrNull()?.apply {
-                data.add(this)
+                data.add(
+                    GroupItemDefinition(group.id, this)
+                )
             }
         } else {
             Log.w("wt-recyclerview", "forget call group.setFirstItemAsTitle()?")
-            data.addAll(group.data)
+            data.addAll(
+                group.data.map {
+                    GroupItemDefinition(group.id, it)
+                }
+            )
         }
     }
 }
@@ -74,4 +85,13 @@ fun RecyclerView.notifyGroupChanged(
     collectDataFromGroups()
     processAllData?.invoke(data)
     notifyChanged(key)
+}
+
+class GroupItemDefinition(
+    private val groupId: String,
+    val source: ItemDefinition
+) : ItemDefinition by source {
+    override fun groupId(): String {
+        return groupId
+    }
 }

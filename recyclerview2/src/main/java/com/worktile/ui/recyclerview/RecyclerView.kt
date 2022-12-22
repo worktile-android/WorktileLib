@@ -6,6 +6,7 @@ import android.annotation.SuppressLint
 import android.os.Handler
 import android.os.Looper
 import android.view.MotionEvent
+import android.view.View
 import android.view.ViewConfiguration
 import androidx.activity.ComponentActivity
 import androidx.fragment.app.Fragment
@@ -39,6 +40,10 @@ fun RecyclerView.executeAfterAllAnimationsAreFinished(
             callback.invoke()
         }
     })
+}
+
+fun RecyclerView.getChildItemDefinition(child: View): ItemDefinition? {
+    return (getChildViewHolder(child) as SimpleAdapter.ItemViewHolder).itemData
 }
 
 internal class ExtensionsPackage(val recyclerView: RecyclerView) {
@@ -129,7 +134,7 @@ internal val RecyclerView.extensionsPackage
 
 private val RecyclerView.config get() = extensionsPackage.config
 private val RecyclerView.adapterData get() = extensionsPackage.adapterData
-private val RecyclerView.viewModel get() = extensionsPackage.viewModel
+internal val RecyclerView.viewModel get() = extensionsPackage.viewModel
 private val RecyclerView.simpleAdapter get() = adapter as? SimpleAdapter
 private fun RecyclerView.collectAdapterData(key: String? = null) =
     extensionsPackage.collectAdapterData(key)
@@ -324,15 +329,6 @@ fun <T> RecyclerView.bind(
 internal class AlwaysNotEqualList<T>(
     val key: String? = null
 ) : ArrayList<T>() {
-    override fun equals(other: Any?): Boolean {
-        return false
-    }
-}
-
-@Suppress("EqualsOrHashCode")
-internal class AlwaysNotEqualLinkedList<T>(
-    val key: String? = null
-) : LinkedList<T>() {
     override fun equals(other: Any?): Boolean {
         return false
     }
