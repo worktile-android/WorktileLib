@@ -8,13 +8,13 @@ import kotlin.experimental.ExperimentalTypeInference
 fun <I1, I2, O> combineLiveData(
     input1: LiveData<I1>,
     input2: LiveData<I2>,
-    combine: (I1?, I2?, MediatorLiveData<O>) -> Unit
+    combine:  MediatorLiveData<O>.(I1?, I2?) -> Unit
 ) = MediatorLiveData<O>().apply {
     addSource(input1) {
-        combine(input1.value, input2.value, this)
+        combine(input1.value, input2.value)
     }
     addSource(input2) {
-        combine(input1.value, input2.value, this)
+        combine(input1.value, input2.value)
     }
 }
 
@@ -22,16 +22,16 @@ fun <I1, I2, I3, O> combineLiveData(
     input1: LiveData<I1>,
     input2: LiveData<I2>,
     input3: LiveData<I3>,
-    combine: (I1?, I2?, I3?, MediatorLiveData<O>) -> Unit
+    combine: MediatorLiveData<O>.(I1?, I2?, I3?) -> Unit
 ) = MediatorLiveData<O>().apply {
     addSource(input1) {
-        combine(input1.value, input2.value, input3.value, this)
+        combine(input1.value, input2.value, input3.value)
     }
     addSource(input2) {
-        combine(input1.value, input2.value, input3.value, this)
+        combine(input1.value, input2.value, input3.value)
     }
     addSource(input3) {
-        combine(input1.value, input2.value, input3.value, this)
+        combine(input1.value, input2.value, input3.value)
     }
 }
 
@@ -40,19 +40,19 @@ fun <I1, I2, I3, I4, O> combineLiveData(
     input2: LiveData<I2>,
     input3: LiveData<I3>,
     input4: LiveData<I4>,
-    combine: (I1?, I2?, I3?, I4?, MediatorLiveData<O>) -> Unit
+    combine: MediatorLiveData<O>.(I1?, I2?, I3?, I4?) -> Unit
 ) = MediatorLiveData<O>().apply {
     addSource(input1) {
-        combine(input1.value, input2.value, input3.value, input4.value, this)
+        combine(input1.value, input2.value, input3.value, input4.value)
     }
     addSource(input2) {
-        combine(input1.value, input2.value, input3.value, input4.value, this)
+        combine(input1.value, input2.value, input3.value, input4.value)
     }
     addSource(input3) {
-        combine(input1.value, input2.value, input3.value, input4.value, this)
+        combine(input1.value, input2.value, input3.value, input4.value)
     }
     addSource(input4) {
-        combine(input1.value, input2.value, input3.value, input4.value, this)
+        combine(input1.value, input2.value, input3.value, input4.value)
     }
 }
 
@@ -64,8 +64,8 @@ fun <T, R, O> LiveData<T>.combine(
     return combineLiveData(
         this,
         liveData
-    ) { input1, input2, output: MediatorLiveData<O> ->
-        output.onCombine(input1, input2)
+    ) { input1, input2->
+        onCombine(input1, input2)
     }
 }
 

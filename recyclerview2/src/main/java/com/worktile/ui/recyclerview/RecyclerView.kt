@@ -17,6 +17,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.worktile.ui.recyclerview.data.*
 import com.worktile.ui.recyclerview.data.EdgeItemDefinition
 import com.worktile.ui.recyclerview.group.Group
+import com.worktile.ui.recyclerview.group.allGroupsFirstUpdated
+import com.worktile.ui.recyclerview.group.unObservedGroups
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -50,6 +52,11 @@ internal class ExtensionsPackage(val recyclerView: RecyclerView) {
     val recyclerViewData = RecyclerViewData()
     val adapterData = MutableStateFlow<List<ItemDefinition>?>(null)
     val groupData = mutableListOf<Group>()
+    val unObservedGroups = mutableSetOf<String>()
+    var allGroupsFirstObserveCompleted: (() -> Unit)? = null
+    var allGroupsFirstUpdated: (() -> Unit)? = null
+    var allGroupsFirstNotify = false
+    val groupSortedBy = mutableListOf<String/*groupId*/>()
 
     var onLoadFailedRetry: (() -> Unit)? = null
     var onEdgeLoadMore: (() -> Unit)? = null
@@ -64,6 +71,7 @@ internal class ExtensionsPackage(val recyclerView: RecyclerView) {
     fun collectAdapterData(key: String? = null): List<ItemDefinition> {
         synchronized(recyclerViewData) {
             val loadingStateData = LoadingStateData(recyclerView, config, onLoadFailedRetry)
+            // AlwaysNotEqualList确保adapterData.value = xxx时每次都可以更新
             return AlwaysNotEqualList<ItemDefinition>(key).apply {
                 when (viewModel.states.loadingState) {
                     LoadingState.EMPTY -> {
@@ -319,6 +327,10 @@ fun <T> RecyclerView.bind(
                             }
                         }
                     }
+                }
+                if (unObservedGroups.isEmpty()) {
+                    allGroupsFirstUpdated?.invoke()
+                    extensionsPackage.allGroupsFirstUpdated = null
                 }
             }
         }
