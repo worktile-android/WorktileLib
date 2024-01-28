@@ -23,6 +23,10 @@ interface ItemDefinition {
     fun key(): Any
     fun content(): Array<ContentItem<*>>?
     fun groupId(): String? = null
+    // 会在onCreateViewHolder的时候创建，用来指定某个itemViewHolder是否可被回收，这里有区别于isRecyclable，因为
+    // isReusable只会被调用一次，而不是setIsRecyclable需要床对调用，面对的场景是某些确定了不需要被回收的item，例如
+    // 含有theia的item
+    fun isReusable(): Boolean = true
 }
 
 fun interface ContentItemComparator<T> {

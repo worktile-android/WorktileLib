@@ -13,10 +13,15 @@ import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.jvm.isAccessible
 import kotlin.reflect.jvm.javaField
 
+operator fun JSONObject.invoke(block: Parser.() -> Unit) {
+    Parser(ParserData(JsonDsl(), this)).apply(block)
+}
+
 class JsonDsl(private val autoDeserialize: Boolean = true) {
     companion object {
         const val TAG = "JsonDsl"
         internal val jsonMap = ConcurrentHashMap<Any/*object need to be filled*/, ParserData>()
+        var log: Boolean = false
     }
 
     fun parse(jsonObject: JSONObject, kClass: KClass<*>): Any {
@@ -40,7 +45,9 @@ class JsonDsl(private val autoDeserialize: Boolean = true) {
             parseMethod.invoke(result)
             jsonMap.remove(result)
         } else if (!autoDeserialize) {
-            println("${TAG}: ${kClass}中没有解析方法")
+            if (log) {
+                println("${TAG}: ${kClass}中没有解析方法")
+            }
         }
 
         return result
@@ -89,7 +96,11 @@ class JsonDsl(private val autoDeserialize: Boolean = true) {
                                         this
                                     )
                                 )
-                            } ?: println("${TAG}: 在${property}中找不到泛型类型")
+                            } ?: run {
+                                if (log) {
+                                    println("${TAG}: 在${property}中找不到泛型类型")
+                                }
+                            }
                         }
                         params.add(property to arrayObj)
                     }
@@ -104,7 +115,9 @@ class JsonDsl(private val autoDeserialize: Boolean = true) {
                             Char::class -> it.toChar()
                             Byte::class -> it.toByte()
                             else -> {
-                                println("${TAG}: 需要一个Number类型属性，但${property.name}不是")
+                                if (log) {
+                                    println("${TAG}: 需要一个Number类型属性，但${property.name}不是")
+                                }
                                 0
                             }
                         }
@@ -119,7 +132,9 @@ class JsonDsl(private val autoDeserialize: Boolean = true) {
                     }
 
                     else -> {
-                        println("${TAG}: 无法解析，key：$jsonFieldName, value=$it jsonObject: $jsonObject")
+                        if (log) {
+                            println("${TAG}: 无法解析，key：$jsonFieldName, value=$it jsonObject: $jsonObject")
+                        }
                     }
                 }
             }
@@ -137,8 +152,12 @@ class JsonDsl(private val autoDeserialize: Boolean = true) {
             try {
                 callBy(args)
             } catch (e: Exception) {
-                println("${TAG}: ${e.message ?: ""}")
-                println("${TAG}: 构造${kClass}对象需要的参数: $parameters, 但只提供了: $args")
+                if (log) {
+                    println("${TAG}: ${e.message ?: ""}")
+                    println("${TAG}: 构造${kClass}对象需要的参数: $parameters, 但只提供了: $args")
+                } else {
+
+                }
             }
         } ?: kClass.java.newInstance()
 

@@ -1,14 +1,13 @@
 package com.worktile.lib
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.*
 import com.worktile.common.default
 import com.worktile.ui.recyclerview.*
 import com.worktile.ui.recyclerview.data.EdgeState
@@ -89,10 +88,12 @@ class MainActivity : AppCompatActivity() {
             }
         }
         loading.setOnClickListener {
-            recycler_view.setLoadingState(LoadingState.LOADING)
+//            recycler_view.setLoadingState(LoadingState.LOADING)
+            startActivity(Intent(this, DemoActivity::class.java))
         }
         empty.setOnClickListener {
-            recycler_view.setLoadingState(LoadingState.EMPTY)
+//            recycler_view.setLoadingState(LoadingState.EMPTY)
+            (recycler_view.parent as ViewGroup).removeView(recycler_view)
         }
         failed.setOnClickListener {
             recycler_view.setLoadingState(LoadingState.FAILED)

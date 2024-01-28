@@ -3,6 +3,7 @@
 package com.worktile.json
 
 import com.worktile.json.JsonDsl.Companion.TAG
+import com.worktile.json.JsonDsl.Companion.log
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.reflect.KClass
@@ -50,15 +51,23 @@ class Operation(val data: ParserData) {
                                 }
                                 property.set(list as T)
                                 return IntoResult(list)
-                            } ?: println("${TAG}: 找不到泛型类型")
+                            } ?: run {
+                                if (log) {
+                                    println("${TAG}: 找不到泛型类型")
+                                }
+                            }
                         }
                         tkClass == Any::class -> {
                             property.set(value as T)
                         }
                         else -> {
-                            println(
-                                "${TAG}: key ${this@into}对应的值是List类型，但${property}不是。jsonObject: ${data.jsonObject}"
-                            )
+                            if (log) {
+                                println(
+                                    "${TAG}: key ${this@into}对应的值是List类型，但${property}不是。jsonObject: ${data.jsonObject}"
+                                )
+                            } else {
+
+                            }
                         }
                     }
                 }
@@ -83,7 +92,11 @@ class Operation(val data: ParserData) {
                             return IntoResult(value)
                         }
                         else -> {
-                            println("${TAG}: 需要一个Number类型属性，但${property}不是")
+                            if (log) {
+                                println("${TAG}: 需要一个Number类型属性，但${property}不是")
+                            } else {
+
+                            }
                         }
                     }
                 }
@@ -92,7 +105,11 @@ class Operation(val data: ParserData) {
                         property.set(value as T)
                         return IntoResult(value)
                     } else {
-                        println("${TAG}: 需要一个String类型属性，但${property}不是")
+                        if (log) {
+                            println("${TAG}: 需要一个String类型属性，但${property}不是")
+                        } else {
+
+                        }
                     }
                 }
                 is Boolean -> {
@@ -100,18 +117,28 @@ class Operation(val data: ParserData) {
                         property.set(value as T)
                         return IntoResult(value)
                     } else {
-                        println("${TAG}: 需要一个Boolean类型属性，但${property}不是")
+                        if (log) {
+                            println("${TAG}: 需要一个Boolean类型属性，但${property}不是")
+                        } else {
+
+                        }
                     }
                 }
                 JSONObject.NULL -> {
                 }
                 else -> {
-                    println(
-                        "${TAG}: 无法解析，key：${this@into}, value=${value::class} jsonObject: ${data.jsonObject}"
-                    )
+                    if (log) {
+                        println(
+                            "${TAG}: 无法解析，key：${this@into}, value=${value::class} jsonObject: ${data.jsonObject}"
+                        )
+                    } else {
+
+                    }
                 }
             }
-        } ?: error(THROW_NOT_FOUNT_EXCEPTION, "key \"${this}\"不存在于${data.jsonObject}中")
+        } ?: run {
+//            error(THROW_NOT_FOUNT_EXCEPTION, "key \"${this}\"不存在于${data.jsonObject}中")
+        }
         return IntoResult()
     }
 
@@ -171,9 +198,13 @@ class Operation(val data: ParserData) {
             if (thenObject is JSONObject) {
                 block(Parser(ParserData(data.jsonDsl, thenObject, this@then)))
             } else {
-                println("${TAG}: key \"${this@then}\"对应的值不是JSONObject，无法执行then方法")
+                if (log) {
+                    println("${TAG}: key \"${this@then}\"对应的值不是JSONObject，无法执行then方法")
+                }
             }
-        } ?: error(THROW_NOT_FOUNT_EXCEPTION, "key \"${this@then}\"不存在于${data.jsonObject}中")
+        } ?: run {
+//            error(THROW_NOT_FOUNT_EXCEPTION, "key \"${this@then}\"不存在于${data.jsonObject}中")
+        }
         return ThenResult(this)
     }
 
@@ -233,13 +264,15 @@ class Operation(val data: ParserData) {
         val value = tkClass.java.newInstance() as T
         when (val thenObject = data.jsonObject.opt(this)) {
             null -> {
-                error(THROW_NOT_FOUNT_EXCEPTION, "key \"${this}\"不存在于${data.jsonObject}中")
+//                error(THROW_NOT_FOUNT_EXCEPTION, "key \"${this}\"不存在于${data.jsonObject}中")
             }
             is JSONObject -> {
                 block.invoke(Parser(ParserData(data.jsonDsl, thenObject, this)), value)
             }
             else -> {
-                println("${TAG}: key \"${this}\"对应的值不是JSONObject，无法执行then方法")
+                if (log) {
+                    println("${TAG}: key \"${this}\"对应的值不是JSONObject，无法执行then方法")
+                }
             }
         }
         return CustomParseResult(value)
@@ -255,13 +288,15 @@ class Operation(val data: ParserData) {
     fun String.foreach(block: Parser.() -> Unit) {
         when (val jsonArray = data.jsonObject.opt(this)) {
             null -> {
-                error(THROW_NOT_FOUNT_EXCEPTION, "key \"${this}\"不存在于${data.jsonObject}中")
+//                error(THROW_NOT_FOUNT_EXCEPTION, "key \"${this}\"不存在于${data.jsonObject}中")
             }
             is JSONArray -> {
                 parseJsonArray(jsonArray, block)
             }
             else -> {
-                println("${TAG}: key \"${this}\"对应的值不是JSONArray，无法执行foreach方法")
+                if (log) {
+                    println("${TAG}: key \"${this}\"对应的值不是JSONArray，无法执行foreach方法")
+                }
             }
         }
     }
@@ -276,7 +311,7 @@ class Operation(val data: ParserData) {
         key?.apply {
             foreach(block)
         } ?: run {
-            error(THROW_NOT_FOUNT_EXCEPTION, "提供的可选key ${alterKeys}都不存在")
+//            error(THROW_NOT_FOUNT_EXCEPTION, "提供的可选key ${alterKeys}都不存在")
         }
     }
 
@@ -306,13 +341,16 @@ class Operation(val data: ParserData) {
     }
 
     private fun error(flag: Int, message: String) {
-        if (ERROR_MASK and errorFlags == flag) {
-            when (flag) {
-                THROW_NOT_FOUNT_EXCEPTION -> throw NotFoundException(message)
-                else -> println("${TAG}: $message")
-            }
-        } else {
-            println("${TAG}: $message")
-        }
+        // 2023-09-04 22:33:16 性能问题，暂时注释掉
+//        if (ERROR_MASK and errorFlags == flag) {
+//            when (flag) {
+//                THROW_NOT_FOUNT_EXCEPTION -> throw NotFoundException(message)
+//                else -> if (log) println("${TAG}: $message")
+//            }
+//        } else {
+//            if (log) {
+//                println("${TAG}: $message")
+//            }
+//        }
     }
 }

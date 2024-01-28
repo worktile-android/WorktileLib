@@ -5,6 +5,7 @@ package com.worktile.ui.recyclerview
 import android.annotation.SuppressLint
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
@@ -17,14 +18,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.worktile.ui.recyclerview.data.*
 import com.worktile.ui.recyclerview.data.EdgeItemDefinition
 import com.worktile.ui.recyclerview.group.Group
-import com.worktile.ui.recyclerview.group.allGroupsFirstUpdated
-import com.worktile.ui.recyclerview.group.unObservedGroups
+import com.worktile.ui.recyclerview.group.invokeAllGroupsFirstObserveCompleted
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.collections.ArrayList
-import kotlin.collections.LinkedHashMap
 
 const val TAG = "RecyclerView"
 
@@ -45,7 +44,7 @@ fun RecyclerView.executeAfterAllAnimationsAreFinished(
 }
 
 fun RecyclerView.getChildItemDefinition(child: View): ItemDefinition? {
-    return (getChildViewHolder(child) as SimpleAdapter.ItemViewHolder).itemData
+    return (getChildViewHolder(child) as SimpleAdapter.ItemViewHolder).itemDefinition
 }
 
 internal class ExtensionsPackage(val recyclerView: RecyclerView) {
@@ -57,6 +56,8 @@ internal class ExtensionsPackage(val recyclerView: RecyclerView) {
     var allGroupsFirstUpdated: (() -> Unit)? = null
     var allGroupsFirstNotify = false
     val groupSortedBy = mutableListOf<String/*groupId*/>()
+    var waitGroupSortedBy = false
+    var hasGroupSortedBy = false
 
     var onLoadFailedRetry: (() -> Unit)? = null
     var onEdgeLoadMore: (() -> Unit)? = null
@@ -243,7 +244,7 @@ fun <T> RecyclerView.bind(
         override fun onAnimationFinished(viewHolder: RecyclerView.ViewHolder) {
             super.onAnimationFinished(viewHolder)
             (viewHolder as? SimpleAdapter.ItemViewHolder)
-                ?.itemData
+                ?.itemDefinition
                 ?.itemAnimationFinished(viewHolder.itemView)
         }
     }
@@ -328,10 +329,7 @@ fun <T> RecyclerView.bind(
                         }
                     }
                 }
-                if (unObservedGroups.isEmpty()) {
-                    allGroupsFirstUpdated?.invoke()
-                    extensionsPackage.allGroupsFirstUpdated = null
-                }
+                invokeAllGroupsFirstObserveCompleted()
             }
         }
     }

@@ -10,27 +10,28 @@ import androidx.lifecycle.Observer
  * https://github.com/android/architecture-samples/blob/dev-todo-mvvm-live/todoapp/app/src/main/java/com/example/android/architecture/blueprints/todoapp/SingleLiveEvent.java
  */
 class EventLiveData<T> : LiveData<T>() {
-
     private val foreverObservers = mutableListOf<Observer<T>>()
-    private var updateIndex = -1
-    private var observeIndex = -1
+    private var canUpdate = false
 
     fun update(value: T? = null) {
-        updateIndex++
+        canUpdate = true
         if (Thread.currentThread().id == Looper.getMainLooper().thread.id) {
-            this.value = value
+            setValue(value)
         } else {
             postValue(value)
         }
     }
 
+    override fun setValue(value: T?) {
+        super.setValue(value)
+        canUpdate = false
+    }
+
     fun observe(owner: LifecycleOwner, observer: (value: T?) -> Unit) {
         observe(owner, Observer {
-            if (observeIndex >= updateIndex) {
-                return@Observer
+            if (canUpdate) {
+                observer.invoke(it)
             }
-            observeIndex = updateIndex
-            observer.invoke(it)
         })
     }
 

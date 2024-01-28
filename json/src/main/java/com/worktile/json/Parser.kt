@@ -2,6 +2,7 @@ package com.worktile.json
 
 import com.worktile.json.*
 import com.worktile.json.Operation.*
+import org.json.JSONObject
 import java.lang.Exception
 import kotlin.reflect.KClass
 import kotlin.reflect.KMutableProperty0

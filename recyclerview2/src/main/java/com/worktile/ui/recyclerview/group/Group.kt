@@ -44,51 +44,66 @@ class Group(viewModel: RecyclerViewViewModel) {
     }
 }
 
-internal val RecyclerView.groupData get() = extensionsPackage.groupData
-internal val RecyclerView.unObservedGroups get() = extensionsPackage.unObservedGroups
-internal val RecyclerView.allGroupsFirstObserveCompleted get() = extensionsPackage.allGroupsFirstObserveCompleted
-internal val RecyclerView.allGroupsFirstUpdated get() = extensionsPackage.allGroupsFirstUpdated
-internal val RecyclerView.allGroupsFistNotify get() = extensionsPackage.allGroupsFirstNotify
-internal val RecyclerView.groupSortedBy get() = extensionsPackage.groupSortedBy
-
 fun RecyclerView.addGroup(group: Group) {
-    groupData.add(group)
-    unObservedGroups.add(group.id)
+    extensionsPackage.apply {
+        groupData.add(group)
+        unObservedGroups.add(group.id)
+    }
 }
 
 fun RecyclerView.removeGroup(group: Group) {
-    groupData.remove(group)
-    unObservedGroups.remove(group.id)
+    extensionsPackage.apply {
+        groupData.remove(group)
+        unObservedGroups.remove(group.id)
+    }
 }
 
 fun RecyclerView.removeGroup(groupId: String) {
-    val iterator = groupData.listIterator()
-    while (iterator.hasNext()) {
-        val item = iterator.next()
-        if (item.id == groupId) {
-            iterator.remove()
-            unObservedGroups.remove(groupId)
+    extensionsPackage.apply {
+        val iterator = groupData.listIterator()
+        while (iterator.hasNext()) {
+            val item = iterator.next()
+            if (item.id == groupId) {
+                iterator.remove()
+                unObservedGroups.remove(groupId)
+            }
         }
     }
 }
 
 fun RecyclerView.clearGroups() {
-    groupData.clear()
-    unObservedGroups.clear()
+    extensionsPackage.apply {
+        groupData.clear()
+        unObservedGroups.clear()
+    }
 }
 
 fun RecyclerView.hasGroup(): Boolean {
-    return groupData.isNotEmpty()
+    return extensionsPackage.run {
+        groupData.isNotEmpty()
+    }
 }
 
-fun RecyclerView.setAllGroupsFirstObserveCompleted(block: () -> Unit) {
-    extensionsPackage.allGroupsFirstObserveCompleted = {
-        extensionsPackage.allGroupsFirstNotify = true
-        block()
+fun RecyclerView.setAllGroupsFirstObserveCompleted(
+    waitGroupSortedBy: Boolean = false,
+    block: () -> Unit
+) {
+    extensionsPackage.apply {
+        this.waitGroupSortedBy = waitGroupSortedBy
+        allGroupsFirstObserveCompleted = {
+            allGroupsFirstNotify = true
+            block()
+        }
+        invokeAllGroupsFirstObserveCompleted()
     }
-    if (unObservedGroups.isEmpty()) {
-        allGroupsFirstObserveCompleted?.invoke()
-        extensionsPackage.allGroupsFirstObserveCompleted = null
+}
+
+internal fun RecyclerView.invokeAllGroupsFirstObserveCompleted() {
+    extensionsPackage.apply {
+        if (unObservedGroups.isEmpty() && (!waitGroupSortedBy || hasGroupSortedBy)) {
+            allGroupsFirstObserveCompleted?.invoke()
+            allGroupsFirstObserveCompleted = null
+        }
     }
 }
 
@@ -97,38 +112,44 @@ fun RecyclerView.setAllGroupsFirstUpdated(block: () -> Unit) {
 }
 
 fun RecyclerView.setGroupSortedBy(sortedBy: List<String/*groupId*/>) {
-    extensionsPackage.groupSortedBy.apply {
-        clear()
-        addAll(sortedBy)
+    extensionsPackage.apply {
+        hasGroupSortedBy = true
+        groupSortedBy.apply {
+            clear()
+            addAll(sortedBy)
+        }
+        notifyGroupChangedNonFirst()
+        invokeAllGroupsFirstObserveCompleted()
     }
-    notifyGroupChangedNonFirst()
 }
 
 private fun RecyclerView.collectDataFromGroups() {
-    data.clear()
-    groupData.sortBy {
-        groupSortedBy.indexOf(it.id)
-    }
-    groupData.forEach { group ->
-        if (group.isOpen) {
-            data.addAll(
-                group.data.map {
-                    GroupItemDefinition(group.id, it)
+    extensionsPackage.apply {
+        data.clear()
+        groupData.sortBy {
+            groupSortedBy.indexOf(it.id)
+        }
+        groupData.forEach { group ->
+            if (group.isOpen) {
+                data.addAll(
+                    group.data.map {
+                        GroupItemDefinition(group.id, it)
+                    }
+                )
+            } else if (group.hasTitle) {
+                group.data.firstOrNull()?.apply {
+                    data.add(
+                        GroupItemDefinition(group.id, this)
+                    )
                 }
-            )
-        } else if (group.hasTitle) {
-            group.data.firstOrNull()?.apply {
-                data.add(
-                    GroupItemDefinition(group.id, this)
+            } else {
+                Log.w("wt-recyclerview", "forget call group.setFirstItemAsTitle()?")
+                data.addAll(
+                    group.data.map {
+                        GroupItemDefinition(group.id, it)
+                    }
                 )
             }
-        } else {
-            Log.w("wt-recyclerview", "forget call group.setFirstItemAsTitle()?")
-            data.addAll(
-                group.data.map {
-                    GroupItemDefinition(group.id, it)
-                }
-            )
         }
     }
 }
@@ -152,8 +173,10 @@ fun RecyclerView.notifyGroupChanged(
 }
 
 fun RecyclerView.notifyGroupChangedNonFirst() {
-    if (allGroupsFistNotify) {
-        notifyGroupChanged()
+    extensionsPackage.apply {
+        if (allGroupsFirstNotify) {
+            notifyGroupChanged()
+        }
     }
 }
 

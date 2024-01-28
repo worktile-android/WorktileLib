@@ -37,13 +37,17 @@ class SimpleAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder {
         val itemData = adapterTypeToItemDataMap[viewType]!!
-        return ItemViewHolder(itemData.viewCreator().invoke(parent))
+        return ItemViewHolder(itemData.viewCreator().invoke(parent)).apply {
+            val recyclable = itemData.isReusable()
+            if (!recyclable) {
+                setIsRecyclable(false)
+            }
+        }
     }
 
     override fun onBindViewHolder(holder: ItemViewHolder, position: Int) {
         data[position].apply {
             contentSparseArray.put(position, content())
-            holder.itemData = this
             holder.itemView.setTag(R.id.item_definition_key, key())
             postponeAsyncMainBlocks[this]?.invoke()
             postponeAsyncMainBlocks.remove(this)
@@ -62,17 +66,21 @@ class SimpleAdapter(
 
     override fun onViewAttachedToWindow(holder: ItemViewHolder) {
         super.onViewAttachedToWindow(holder)
-        holder.itemData?.attach(holder.itemView)
+        holder.itemDefinition?.apply {
+            attach(holder.itemView)
+        }
     }
 
     override fun onViewDetachedFromWindow(holder: ItemViewHolder) {
         super.onViewDetachedFromWindow(holder)
-        holder.itemData?.detach(holder.itemView)
+        holder.itemDefinition?.apply {
+            detach(holder.itemView)
+        }
     }
 
     override fun onViewRecycled(holder: ItemViewHolder) {
         super.onViewRecycled(holder)
-        holder.itemData?.recycle(holder.itemView)
+        holder.itemDefinition?.recycle(holder.itemView)
     }
 
     suspend fun updateData(newData: List<ItemDefinition>, debugKey: String? = null, updateCallback: (() -> Unit)? = null) {
@@ -267,7 +275,7 @@ class SimpleAdapter(
                     itemAnimator?.isRunning {
                         forEach { item ->
                             (getChildViewHolder(item) as? ItemViewHolder)
-                                ?.itemData
+                                ?.itemDefinition
                                 ?.allAnimationsFinished(item)
                         }
                         if (newData is AlwaysNotEqualList) {
@@ -283,11 +291,9 @@ class SimpleAdapter(
         }
     }
 
-    class ItemViewHolder(
+    inner class ItemViewHolder(
         itemView: View
     ) : RecyclerView.ViewHolder(itemView) {
-        // 因为viewHolder可能会复用，因此这里记下最后一次绑定的itemData，以便在detach或者recycle的时候调用该
-        // itemData的detach()或recycle()方法
-        var itemData: ItemDefinition? = null
+        val itemDefinition get() = data.getOrNull(bindingAdapterPosition)
     }
 }

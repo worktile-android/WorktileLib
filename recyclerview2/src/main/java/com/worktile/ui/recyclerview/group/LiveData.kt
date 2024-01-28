@@ -1,5 +1,6 @@
 package com.worktile.ui.recyclerview.group
 
+import android.util.Log
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
@@ -29,11 +30,8 @@ class GroupLiveData<T>(
         super.observe(owner) {
             observer(group, it)
             recyclerView.apply {
-                unObservedGroups.remove(group.id)
-                if (unObservedGroups.isEmpty()) {
-                    allGroupsFirstObserveCompleted?.invoke()
-                    extensionsPackage.allGroupsFirstObserveCompleted = null
-                }
+                extensionsPackage.unObservedGroups.remove(group.id)
+                invokeAllGroupsFirstObserveCompleted()
             }
         }
     }
@@ -70,7 +68,7 @@ class MultiGroupLiveData : MediatorLiveData<List<MultiGroupDataItem>>() {
         owner: LifecycleOwner,
         observer: (List<MultiGroupItem>) -> Unit
     ) {
-        recyclerView.unObservedGroups.add(labelId)
+        recyclerView.extensionsPackage.unObservedGroups.add(labelId)
         super.observe(owner) { groupDataList ->
             cachedIds.forEach {
                 recyclerView.removeGroup(it)
@@ -82,17 +80,14 @@ class MultiGroupLiveData : MediatorLiveData<List<MultiGroupDataItem>>() {
                 val group = Group(recyclerView.viewModel).apply {
                     setId(groupId)
                     recyclerView.addGroup(this)
-                    recyclerView.unObservedGroups.remove(groupId)
+                    recyclerView.extensionsPackage.unObservedGroups.remove(groupId)
                 }
                 MultiGroupItem(group, groupData.value)
             }
             observer(groupItems)
             recyclerView.apply {
-                unObservedGroups.remove(labelId)
-                if (unObservedGroups.isEmpty()) {
-                    allGroupsFirstObserveCompleted?.invoke()
-                    extensionsPackage.allGroupsFirstObserveCompleted = null
-                }
+                extensionsPackage.unObservedGroups.remove(labelId)
+                invokeAllGroupsFirstObserveCompleted()
             }
         }
     }
