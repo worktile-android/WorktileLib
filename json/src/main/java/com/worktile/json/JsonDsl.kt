@@ -13,8 +13,10 @@ import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.jvm.isAccessible
 import kotlin.reflect.jvm.javaField
 
-operator fun JSONObject.invoke(block: Parser.() -> Unit) {
-    Parser(ParserData(JsonDsl(), this)).apply(block)
+operator fun JSONObject?.invoke(block: Parser.() -> Unit) {
+    if (this != null) {
+        Parser(ParserData(JsonDsl(), this)).apply(block)
+    }
 }
 
 class JsonDsl(private val autoDeserialize: Boolean = true) {
